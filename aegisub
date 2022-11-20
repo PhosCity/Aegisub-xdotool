@@ -4,7 +4,7 @@
 
 # Variables
 DEPENDENCIES=(rofi xdotool yad notify-send)
-SLEEP_DURATION=1s
+SLEEP_DURATION=0.04s
 DIR="${HOME}/Fansubbing/Subkt" # Folder where I have all my fansubbing projects. This is the folder where file selector opens up for selecting files.
 
 declare -a OPTIONS=(

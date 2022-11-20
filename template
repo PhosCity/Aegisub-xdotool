@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+
+# VERSION = 0.0.1
+
+# Variables
+DEPENDENCIES=(rofi xdotool yad notify-send)
+SLEEP_DURATION=0.04s # [EDIT] Increase this value if the script executes so fast that it's missing what it should click.
+DIR="${HOME}"        # [EDIT] Folder where you want file picker to open
+
+# [EDIT] Write the names of the plugins here
+declare -a OPTIONS=(
+	"item1"
+	"item2"
+)
+
+SCRIPT_DIRECTORY=${BASH_SOURCE[0]%/*}
+ROFI_THEME="${SCRIPT_DIRECTORY}/rofi-themes/window.rasi"
+
+# Functions
+# Check dependencies
+dep_ch() {
+	for dep; do
+		if ! command -v "${dep}" >/dev/null; then
+			missing_dep="${missing_dep}\"${dep}\" "
+		fi
+	done
+}
+
+# Move mouse to ($1, $2) coordinate and left click
+xdo() {
+	sleep "${SLEEP_DURATION}"
+	xdotool mousemove "$1" "$2"
+	xdotool click 1
+}
+
+# type key $1 in the keyboard
+key() {
+	sleep "${SLEEP_DURATION}"
+	xdotool key "$1"
+}
+
+# File selector. The extention of file is $1
+select_file() {
+	FILETYPE="$1"
+
+	cd "${DIR}" || exit 1
+	FILE=$(yad --width 800 --height 500 --title "Choose ${FILETYPE} file" --file-filter "*.${FILETYPE}" --file)
+	if [[ ${FILE##*.} != "${FILETYPE}" ]]; then
+		notify-send "${FILETYPE} file was not selected."
+		exit 1
+	fi
+}
+
+# Check for dependencies
+for i in "${DEPENDENCIES[@]}"; do
+	dep_ch "${i}"
+done
+if [[ -n "${missing_dep}" ]]; then
+	notify-send "${missing_dep}not found. Please install all missing dependencies."
+	printf "\033[1;31m\n%s\033[0m\n" "${missing_dep}not found. Please install all missing dependencies." >&2
+	exit 1
+fi
+
+# Main
+PLUGIN_NAME=$(printf '%s\n' "${OPTIONS[@]}" | rofi -dmenu -i -p "Plugins:" -theme "${ROFI_THEME}")
+
+case "${PLUGIN_NAME}" in
+	"item1")
+		# [EDIT] Put xdotool commands to execute plugin item1 here
+		;;
+	"item2")
+		# [EDIT] Put xdotool commands to execute plugin item2 here
+		;;
+	*) ;;
+esac
