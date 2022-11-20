@@ -21,7 +21,7 @@ SCRIPT_DIRECTORY=${BASH_SOURCE[0]%/*}
 ROFI_THEME="${SCRIPT_DIRECTORY}/rofi-themes/window.rasi"
 
 # Functions
-# Check dependencies
+# Collect missing dependencies
 dep_ch() {
 	for dep; do
 		if ! command -v "${dep}" >/dev/null; then

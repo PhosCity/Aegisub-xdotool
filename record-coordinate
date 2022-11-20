@@ -1,7 +1,27 @@
 #!/usr/bin/env bash
 
-# VERSION = 0.0.1
+# VERSION = 0.0.2
 
+# Collect missing dependencies
+dep_ch() {
+	for dep; do
+		if ! command -v "${dep}" >/dev/null; then
+			missing_dep="${missing_dep}\"${dep}\" "
+		fi
+	done
+}
+DEPENDENCIES=(rofi xdotool)
+
+# Check for dependencies
+for i in "${DEPENDENCIES[@]}"; do
+	dep_ch "${i}"
+done
+if [[ -n "${missing_dep}" ]]; then
+	printf "\033[1;31m\n%s\033[0m\n" "${missing_dep}not found. Please install all missing dependencies." >&2
+	exit 1
+fi
+
+# Main
 file=$(mktemp)
 SCRIPT_DIRECTORY=${BASH_SOURCE[0]%/*}
 ROFI_THEME="${SCRIPT_DIRECTORY}/rofi-themes/window.rasi"
@@ -19,7 +39,7 @@ while true; do
 		count=0
 	fi
 	if [[ count -gt 5 ]]; then
-		xdotool key 0xff1b # Press Escape Key because sometimes when mouse is in Automation Menu of Aegisub, you can't type the command.
+		xdotool key Escape # Press Escape Key because sometimes when mouse is in Automation Menu of Aegisub, you can't type the command.
 		CHOICE=$(printf "Continue without recording\nStop Recording" | rofi -dmenu -i -p "Info" -theme "${ROFI_THEME}")
 
 		case "${CHOICE}" in
@@ -31,7 +51,7 @@ while true; do
 				xclip -selection clipboard -i <"${file}"
 				cat "${file}"
 				rm "${file}"
-				exit 1
+				exit 0
 				;;
 
 			*)
