@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+
+# VERSION = 0.0.1
+
+# Variables
+DEPENDENCIES=(rofi xdotool yad notify-send)
+SLEEP_DURATION=1s
+DIR="${HOME}/Fansubbing/Subkt" # Folder where I have all my fansubbing projects. This is the folder where file selector opens up for selecting files.
+
+declare -a OPTIONS=(
+	"Zeref - Everything Shape - Shape Clipper"
+	"PhosCity - svg2ass"
+	"PhosCity - svg2ass - pasteover"
+	"arch1t3cht - Note Browser - Load Notes"
+	"arch1t3cht - Note Browser - Clear Markers"
+	"petzku - Encode Clip"
+	"Aegisub Motion - Apply"
+)
+
+SCRIPT_DIRECTORY=${BASH_SOURCE[0]%/*}
+ROFI_THEME="${SCRIPT_DIRECTORY}/rofi-themes/window.rasi"
+
+# Functions
+# Check dependencies
+dep_ch() {
+	for dep; do
+		if ! command -v "${dep}" >/dev/null; then
+			missing_dep="${missing_dep}\"${dep}\" "
+		fi
+	done
+}
+
+# Move mouse to ($1, $2) coordinate and left click
+xdo() {
+	sleep "${SLEEP_DURATION}"
+	xdotool mousemove "$1" "$2"
+	xdotool click 1
+}
+
+# type key $1 in the keyboard
+key() {
+	sleep "${SLEEP_DURATION}"
+	xdotool key "$1"
+}
+
+# File selector. The extention of file is $1
+select_file() {
+	FILETYPE="$1"
+
+	cd "${DIR}" || exit 1
+	FILE=$(yad --width 800 --height 500 --title "Choose ${FILETYPE} file" --file-filter "*.${FILETYPE}" --file)
+	if [[ ${FILE##*.} != "${FILETYPE}" ]]; then
+		notify-send "${FILETYPE} file was not selected."
+		exit 1
+	fi
+}
+
+# Check for dependencies
+for i in "${DEPENDENCIES[@]}"; do
+	dep_ch "${i}"
+done
+if [[ -n "${missing_dep}" ]]; then
+	notify-send "${missing_dep}not found. Please install all missing dependencies."
+	printf "\033[1;31m\n%s\033[0m\n" "${missing_dep}not found. Please install all missing dependencies." >&2
+	exit 1
+fi
+
+# Main
+PLUGIN_NAME=$(printf '%s\n' "${OPTIONS[@]}" | rofi -dmenu -i -p "Plugins:" -theme "${ROFI_THEME}")
+
+case "${PLUGIN_NAME}" in
+	"Zeref - Everything Shape - Shape Clipper")
+		# Shape clipping sometimes gives wrong results so it's recommended that you expand the shape first
+
+		# Shape Expand starts here
+		xdo 331 47  # Click on Automation Tab
+		xdo 411 252 # Click on !utilities
+		xdo 568 378 # Click on Zeref
+		xdo 686 376 # Click on Everything Shape
+		xdo 585 247 # Click on dropdown for all all modes
+		xdo 525 326 # Click on `Shape Expand`
+		xdo 475 556 # Click on `Shape` Button
+
+		# Shape Clipping starts here
+		xdo 331 47  # Click on Automation Tab
+		xdo 411 252 # Click on !utilities
+		xdo 568 378 # Click on Zeref
+		xdo 686 376 # Click on Everything Shape
+		xdo 585 247 # Click on dropdown for all all modes
+		xdo 510 297 # Click on `Shape Clipper`
+		xdo 475 556 # Click on `Shape` Button
+		;;
+
+	"PhosCity - svg2ass" | "PhosCity - svg2ass - pasteover")
+		MODE=$(printf "drawing\nclip\niclip" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
+
+		select_file "svg"
+		PATH_TO_SVG2ASS="${HOME}/Fansubbing/Scripts/svg2ass" # where svg2ass is located (If svg2ass is at path, remove this line and replace this variable with `svg2ass` below)
+		"${PATH_TO_SVG2ASS}" "${FILE}" | xclip -selection clipboard
+
+		xdo 331 47  # Click on Automation Tab
+		xdo 327 200 # Click on !phoscity
+		xdo 569 426 # Click on svg2ass
+		xdo 693 459 # Click on Run
+		case "${MODE}" in
+			"clip")
+				xdo 509 427 # Untick drawing
+				xdo 614 423 # Tick clip
+				;;
+			"iclip")
+				xdo 509 427 # Untick drawing
+				xdo 682 426 # Tick iclip
+				;;
+			*) ;;
+		esac
+		if [[ "${PLUGIN_NAME}" == "PhosCity - svg2ass - pasteover" ]]; then
+			xdo 767 431 # Tick `pasteover`
+		fi
+		xdo 680 320 # Click inside the textbox
+		key ctrl+a  # Select everything inside the textbox
+		key ctrl+v  # Paste whatever's on clipboard to the textbox
+		xdo 625 455 # Click on `Textbox` button
+		;;
+
+	"arch1t3cht - Note Browser - Load Notes")
+		select_file "txt"
+		xclip -selection clipboard -i <"${FILE}"
+
+		xdo 331 47  # Click on Automation Tab
+		xdo 355 160 # Click on !pace
+		xdo 555 180 # Click on Note Browser
+		xdo 730 300 # Click on Load Notes
+		xdo 520 310 # Click on text box
+		key ctrl+v  # Paste whatever's on clipboard to the textbox
+		xdo 590 515 # Click on Ok button
+		;;
+
+	"arch1t3cht - Note Browser - Clear Markers")
+		xdo 331 47  # Click on Automation Tab
+		xdo 355 160 # Click on !pace
+		xdo 555 180 # Click on Note Browser
+		;;
+
+	"petzku - Encode Clip")
+		MODE=$(printf "Clip with Subtitles\nClip with Subtitles (No Audio)\nRaw Video\nRaw Video (No Audio)\nAudio Only" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
+
+		xdo 331 47  # Click on Automation Tab
+		xdo 355 185 # Click on !petzku
+		xdo 515 215 # Click on Encode Clip
+		case "${MODE}" in
+			"Clip with Subtitles") xdo 700 280 ;;
+			"Clip with Subtitles (No Audio)") xdo 700 300 ;;
+			"Raw Video") xdo 700 240 ;;
+			"Raw Video (No Audio)") xdo 700 253 ;;
+			"Audio Only") xdo 700 215 ;;
+			*) ;;
+		esac
+		;;
+
+	"Aegisub Motion - Apply")
+		select_file "txt"
+		xclip -selection clipboard -i <"${FILE}"
+		xdo 331 47  # Click on Automation Tab
+		xdo 390 352 # Click on Aegisub Motion
+		xdo 534 355 # Click on Apply
+		xdo 600 273 # Click on the texbox
+		key ctrl+v
+		xdo 533 520 # Click on Go button
+		;;
+	*) ;;
+esac

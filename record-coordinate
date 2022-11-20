@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+# VERSION = 0.0.1
+
+file=$(mktemp)
+SCRIPT_DIRECTORY=${BASH_SOURCE[0]%/*}
+ROFI_THEME="${SCRIPT_DIRECTORY}/rofi-themes/window.rasi"
+count=0
+prev_x=0
+prev_y=0
+while true; do
+	sleep 0.1s
+	location=$(xdotool getmouselocation)
+	x=$(echo "${location}" | cut -d " " -f1 | cut -d ":" -f2)
+	y=$(echo "${location}" | cut -d " " -f2 | cut -d ":" -f2)
+	if [[ prev_x -eq x && prev_y -eq y ]]; then
+		count=$((count + 1))
+	else
+		count=0
+	fi
+	if [[ count -gt 5 ]]; then
+		xdotool key 0xff1b # Press Escape Key because sometimes when mouse is in Automation Menu of Aegisub, you can't type the command.
+		CHOICE=$(printf "Continue without recording\nStop Recording" | rofi -dmenu -i -p "Info" -theme "${ROFI_THEME}")
+
+		case "${CHOICE}" in
+			"" | "Continue without recording") count=0 ;;
+
+			"Stop Recording")
+				# clear the screen
+				printf '\x1B[2J\x1B[1;1H'
+				xclip -selection clipboard -i <"${file}"
+				cat "${file}"
+				rm "${file}"
+				exit 1
+				;;
+
+			*)
+				template=$(echo "${CHOICE}" | cut -d " " -f1)
+				msg=$(echo "${CHOICE}" | cut -d " " -f2)
+				case "${template}" in
+					"t") echo "key ${msg}" >>"${file}" ;;
+					"c") echo "xdo ${x} ${y}  # Click on ${msg}" >>"${file}" ;;
+					*) echo "xdo ${x} ${y}  # Click on ${CHOICE}" >>"${file}" ;;
+				esac
+				;;
+		esac
+
+		count=0
+		sleep 1s
+	fi
+	prev_x="${x}"
+	prev_y="${y}"
+done
