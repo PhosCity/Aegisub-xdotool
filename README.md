@@ -23,7 +23,7 @@ https://user-images.githubusercontent.com/65547311/202894369-e6e8eae6-fd21-48df-
 
 ## Limitation
 
-- I use a tiling windows manager so the windows' dimension and position do not change. If they change in your distro, you cannot use this script.
+- I use a tiling windows manager so the windows' dimension and position do not change. If everytime you run an Aegisub script, their position and/or dimension changes in your distro, you cannot use this script.
 - If you constantly add new plugins, the co-ordinate of the plugin in Automation menu will also change. To prevent that, I add all of my most used scripts in sub-menu as shown in the image below so their position will always remain same even if I add new plugins. You can add script to sub-menu using Dependency Control's `Macro Configuration` or modifying depctrl's json file or script itself.
 
 ![auto](https://user-images.githubusercontent.com/65547311/202894970-6b73e70f-ce79-4ee6-8e84-aaf42faa177f.png)
