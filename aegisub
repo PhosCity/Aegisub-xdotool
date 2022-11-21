@@ -124,6 +124,7 @@ round_tags() {
 	xdo 666 82  # Click on round numbers
 	xdo 620 505 # Click on Metamorphosis Button
 }
+
 # ╭──────────────────────────────────────────────────────────╮
 # │ Check for dependencies                                   │
 # ╰──────────────────────────────────────────────────────────╯

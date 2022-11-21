@@ -4,14 +4,14 @@ https://user-images.githubusercontent.com/65547311/202894369-e6e8eae6-fd21-48df-
 
 ## Requirements
 
-| Program | Function                                                                                   |
-| ------- | ------------------------------------------------------------------------------------------ |
-| xdotool | To emulate keypresses and mouse clicks                                                     |
-| rofi    | launcher to select which Aegisub script to execute                                         |
-| yad     | if you need file selector                                                                  |
-| xclip   | To manage contents of clipboard                                                            |
-| notify  | send - to show messages as notification (since we won't be running the script in terminal) |
-|         | Basic shell scripting knowledge                                                            |
+| Program     | Function                                                                            |
+| ----------- | ----------------------------------------------------------------------------------- |
+| xdotool     | To emulate keypresses and mouse clicks                                              |
+| rofi        | Launcher to select which Aegisub script to execute                                  |
+| yad         | If you need file selector                                                           |
+| xclip       | To manage contents of clipboard                                                     |
+| notify-send | To show messages as notification (since we won't be running the script in terminal) |
+|             | Basic shell scripting knowledge                                                     |
 
 ## What you can do with this script
 
