@@ -55,7 +55,7 @@ select_file() {
 	# Create cache file if it doesn't exist
 	[[ -f "${CACHE}" ]] || echo "${HOME}" >"${CACHE}"
 	DIR=$(cat "${CACHE}")
-	[[ -z "${DIR}" ]] && DIR="${HOME}"
+	[[ ! -d "${DIR}" ]] && DIR="${HOME}"
 	cd "${DIR}" || exit 1
 
 	FILETYPE="$1"
