@@ -19,6 +19,15 @@ declare -a OPTIONS=(
 	"arch1t3cht - Note Browser - Clear Markers"
 	"petzku - Encode Clip"
 	"Aegisub Motion - Apply"
+	"Line0 - Merge Drawings"
+	"Chrolo - Change Alignment"
+	"Unanimated - Hyperdimensional Relocator - Round"
+	"Unanimated - Hyperdimensional Relocator - Line2fbf"
+	"Unanimated - Hyperdimensional Relocator - Find center"
+	"Unanimated - Hyperdimensional Relocator - Align X"
+	"Unanimated - Hyperdimensional Relocator - Align Y"
+	"Unanimated - Hyperdimensional Relocator - clip2fax"
+	"Unanimated - Hyperdimensional Relocator - clip2frz"
 )
 
 SCRIPT_DIRECTORY=${BASH_SOURCE[0]%/*}
@@ -99,9 +108,22 @@ expand_shape() {
 	xdo 585 247 # Click on dropdown for all all modes
 	xdo 525 326 # Click on `Shape Expand`
 	xdo 475 556 # Click on `Shape` Button
-
 }
 
+# Open Hyperdimensional Relocator
+open_relocator() {
+	xdo 326 48  # Click on Automation
+	xdo 332 227 # Click on !unanimated
+	xdo 557 380 # Click on Hyperdimensional Relocator
+}
+
+# Round the tags using Hyperdimensional Relocator
+round_tags() {
+	open_relocator
+	xdo 724 285 # Click on Metamorphosis dropdown
+	xdo 666 82  # Click on round numbers
+	xdo 620 505 # Click on Metamorphosis Button
+}
 # ╭──────────────────────────────────────────────────────────╮
 # │ Check for dependencies                                   │
 # ╰──────────────────────────────────────────────────────────╯
@@ -124,7 +146,6 @@ case "${PLUGIN_NAME}" in
 
 	"Zeref - Everything Shape - Shape Clipper")
 		# Shape clipping sometimes gives wrong results so it's recommended that you expand the shape first
-
 		expand_shape
 		open_everything_shape
 		xdo 585 247 # Click on dropdown for all all modes
@@ -225,6 +246,94 @@ case "${PLUGIN_NAME}" in
 		xdo 600 273 # Click on the texbox
 		key ctrl+v
 		xdo 533 520 # Click on Go button
+		;;
+
+	"Line0 - Merge Drawings")
+		# Merge drawings tend to give wrong results when fscx/y != 100
+		xdo 324 52  # Click on Automation
+		xdo 336 103 # Click on !line0
+		xdo 532 149 # Click on Merge Drawings
+		xdo 772 332 # Click on alignment dropdown
+		xdo 705 536 # Click on 7
+		xdo 734 367 # Click on Scale x
+		key ctrl+a
+		key 1
+		key 0
+		key 0
+		xdo 738 399 # Click on Scale y
+		key ctrl+a
+		key 1
+		key 0
+		key 0
+		xdo 730 436 # Click on OK Button
+		asswipe
+		;;
+
+	"Chrolo - Change Alignment")
+		ALIGNMENT=$(seq 1 9 | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
+		xdo 322 45  # Click on Automation
+		xdo 345 251 # Click on !utilities
+		xdo 537 304 # Click on Chrolo
+		xdo 706 301 # Click on Change Alignment
+		xdo 663 383 # Click on dropdown
+		case "${ALIGNMENT}" in
+			1) xdo 602 409 ;;
+			2) xdo 608 438 ;;
+			3) xdo 600 459 ;;
+			4) xdo 609 496 ;;
+			5) xdo 602 520 ;;
+			6) xdo 606 549 ;;
+			7) xdo 598 577 ;;
+			8) xdo 601 605 ;;
+			9) xdo 604 632 ;;
+			*) ;;
+		esac
+		xdo 728 414 # Click on Switch
+		round_tags
+		;;
+
+	"Unanimated - Hyperdimensional Relocator - Round") round_tags ;;
+
+	"Unanimated - Hyperdimensional Relocator - Line2fbf")
+		open_relocator
+		xdo 724 285 # Click on Metamorphosis dropdown
+		xdo 641 108 # Click on line2fbf
+		xdo 620 505 # Click on Metamorphosis Button
+		;;
+
+	"Unanimated - Hyperdimensional Relocator - Find center")
+		open_relocator
+		xdo 724 285 # Click on Metamorphosis dropdown
+		xdo 650 499 # Click on find centre
+		xdo 620 505 # Click on Metamorphosis Button
+		;;
+
+	"Unanimated - Hyperdimensional Relocator - Align X")
+		open_relocator
+		xdo 463 292 # Click on Positron Canon dropdown
+		xdo 405 163 # Click on Align X
+		xdo 382 502 # Click on Positron Canon Button
+		;;
+
+	"Unanimated - Hyperdimensional Relocator - Align Y")
+		open_relocator
+		xdo 463 292 # Click on Positron Canon dropdown
+		xdo 365 193 # Click on Align Y
+		xdo 382 502 # Click on Positron Canon Button
+		;;
+
+	"Unanimated - Hyperdimensional Relocator - clip2fax")
+		open_relocator
+		xdo 463 292 # Click on Positron Canon dropdown
+		xdo 385 248 # Click on clip to fax
+		xdo 382 502 # Click on Positron Canon Button
+		;;
+
+	"Unanimated - Hyperdimensional Relocator - clip2frz")
+		open_relocator
+		xdo 463 292 # Click on Positron Canon dropdown
+		xdo 405 274 # Click on clip to frz
+		xdo 382 502 # Click on Positron Canon Button
 		;;
 
 	*) ;;
