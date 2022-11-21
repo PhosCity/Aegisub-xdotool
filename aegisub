@@ -28,6 +28,7 @@ declare -a OPTIONS=(
 	"Unanimated - Hyperdimensional Relocator - Align Y"
 	"Unanimated - Hyperdimensional Relocator - clip2fax"
 	"Unanimated - Hyperdimensional Relocator - clip2frz"
+	"Unanimated - Script Cleanup - Remove Unused Styles"
 )
 
 SCRIPT_DIRECTORY=${BASH_SOURCE[0]%/*}
@@ -122,6 +123,13 @@ round_tags() {
 	open_relocator
 	xdo 724 285 # Click on Metamorphosis dropdown
 	xdo 666 82  # Click on round numbers
+	xdo 714 356 # Click on round dropdown
+	case "$1" in
+		0.1) xdo 667 415 ;;
+		0.01) xdo 670 440 ;;
+		0.001) xdo 670 470 ;;
+		1 | *) xdo 660 390 ;;
+	esac
 	xdo 620 505 # Click on Metamorphosis Button
 }
 
@@ -290,10 +298,13 @@ case "${PLUGIN_NAME}" in
 			*) ;;
 		esac
 		xdo 728 414 # Click on Switch
-		round_tags
+		round_tags 0.001
 		;;
 
-	"Unanimated - Hyperdimensional Relocator - Round") round_tags ;;
+	"Unanimated - Hyperdimensional Relocator - Round")
+		PRECISION=$(printf "1\n0.1\n0.01\n0.001" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
+		round_tags "${PRECISION}"
+		;;
 
 	"Unanimated - Hyperdimensional Relocator - Line2fbf")
 		open_relocator
@@ -335,6 +346,14 @@ case "${PLUGIN_NAME}" in
 		xdo 463 292 # Click on Positron Canon dropdown
 		xdo 405 274 # Click on clip to frz
 		xdo 382 502 # Click on Positron Canon Button
+		;;
+
+	"Unanimated - Script Cleanup - Remove Unused Styles")
+		xdo 327 48  # Click on Automation
+		xdo 332 227 # Click on !unanimated
+		xdo 554 680 # Click on Script Cleanup
+		xdo 536 431 # Click on Tick 'Delete unused styles'
+		xdo 387 537 # Click on 'Run Selected' Button
 		;;
 
 	*) ;;
