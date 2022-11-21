@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 
-# VERSION = 0.0.1
+# VERSION = 0.0.2
 
-# Variables
-DEPENDENCIES=(rofi xdotool yad notify-send)
+# ╭──────────────────────────────────────────────────────────╮
+# │ Variables                                                │
+# ╰──────────────────────────────────────────────────────────╯
+DEPENDENCIES=(rofi xdotool yad notify-send xclip)
 SLEEP_DURATION=0.04s
 DIR="${HOME}/Fansubbing/Subkt" # Folder where I have all my fansubbing projects. This is the folder where file selector opens up for selecting files.
 
 declare -a OPTIONS=(
 	"Zeref - Everything Shape - Shape Clipper"
+	"Zeref - Everything Shape - Shape to Clip"
+	"Zeref - Everything Shape - Clip to Shape"
 	"PhosCity - svg2ass"
 	"PhosCity - svg2ass - pasteover"
 	"arch1t3cht - Note Browser - Load Notes"
@@ -19,8 +23,12 @@ declare -a OPTIONS=(
 
 SCRIPT_DIRECTORY=${BASH_SOURCE[0]%/*}
 ROFI_THEME="${SCRIPT_DIRECTORY}/rofi-themes/window.rasi"
+CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
 
-# Functions
+# ╭──────────────────────────────────────────────────────────╮
+# │ Functions                                                │
+# ╰──────────────────────────────────────────────────────────╯
+
 # Collect missing dependencies
 dep_ch() {
 	for dep; do
@@ -45,17 +53,58 @@ key() {
 
 # File selector. The extention of file is $1
 select_file() {
-	FILETYPE="$1"
-
+	# Create cache file if it doesn't exist
+	[[ -f "${CACHE}" ]] || echo "${HOME}" >"${CACHE}"
+	DIR=$(cat "${CACHE}")
+	[[ -z "${DIR}" ]] && DIR="${HOME}"
 	cd "${DIR}" || exit 1
+
+	FILETYPE="$1"
 	FILE=$(yad --width 800 --height 500 --title "Choose ${FILETYPE} file" --file-filter "*.${FILETYPE}" --file)
 	if [[ ${FILE##*.} != "${FILETYPE}" ]]; then
 		notify-send "${FILETYPE} file was not selected."
 		exit 1
+	else
+		NEW_DIR=$(dirname "${FILE}")
+		echo "${NEW_DIR}" >"${CACHE}"
 	fi
 }
 
-# Check for dependencies
+# ╭──────────────────────────────────────────────────────────╮
+# │ Repeatedly used Aegisub Scripts                          │
+# ╰──────────────────────────────────────────────────────────╯
+
+# ASSWipe
+asswipe() {
+	sleep 0.8s
+	xdo 323 51  # Click on Automation Menu
+	xdo 329 104 # Click on line0
+	xdo 519 101 # Click on ASSWipe
+	xdo 531 619 # Click on OK Button
+	sleep 1s    # Allow 1 second for asswipe to complete. If processing takes more than that, close manually
+	xdo 686 311 # Click on Close Button
+}
+
+# Open Everything Shape Script
+open_everything_shape() {
+	xdo 331 47  # Click on Automation Tab
+	xdo 411 252 # Click on !utilities
+	xdo 568 378 # Click on Zeref
+	xdo 686 376 # Click on Everything Shape
+}
+
+# Shape Expand - Zeref's Everything Shape
+expand_shape() {
+	open_everything_shape
+	xdo 585 247 # Click on dropdown for all all modes
+	xdo 525 326 # Click on `Shape Expand`
+	xdo 475 556 # Click on `Shape` Button
+
+}
+
+# ╭──────────────────────────────────────────────────────────╮
+# │ Check for dependencies                                   │
+# ╰──────────────────────────────────────────────────────────╯
 for i in "${DEPENDENCIES[@]}"; do
 	dep_ch "${i}"
 done
@@ -65,30 +114,38 @@ if [[ -n "${missing_dep}" ]]; then
 	exit 1
 fi
 
-# Main
+# ╭──────────────────────────────────────────────────────────╮
+# │ Main                                                     │
+# ╰──────────────────────────────────────────────────────────╯
 PLUGIN_NAME=$(printf '%s\n' "${OPTIONS[@]}" | rofi -dmenu -i -p "Plugins:" -theme "${ROFI_THEME}")
 
 case "${PLUGIN_NAME}" in
 	"Zeref - Everything Shape - Shape Clipper")
 		# Shape clipping sometimes gives wrong results so it's recommended that you expand the shape first
 
-		# Shape Expand starts here
-		xdo 331 47  # Click on Automation Tab
-		xdo 411 252 # Click on !utilities
-		xdo 568 378 # Click on Zeref
-		xdo 686 376 # Click on Everything Shape
-		xdo 585 247 # Click on dropdown for all all modes
-		xdo 525 326 # Click on `Shape Expand`
-		xdo 475 556 # Click on `Shape` Button
-
-		# Shape Clipping starts here
-		xdo 331 47  # Click on Automation Tab
-		xdo 411 252 # Click on !utilities
-		xdo 568 378 # Click on Zeref
-		xdo 686 376 # Click on Everything Shape
+		expand_shape
+		open_everything_shape
 		xdo 585 247 # Click on dropdown for all all modes
 		xdo 510 297 # Click on `Shape Clipper`
 		xdo 475 556 # Click on `Shape` Button
+		asswipe
+		;;
+
+	"Zeref - Everything Shape - Shape to Clip")
+		expand_shape
+		open_everything_shape
+		xdo 585 247 # Click on dropdown for all all modes
+		xdo 487 550 # Click on 'Shape to Clip' in dropdown
+		xdo 475 556 # Click on `Shape` Button
+		asswipe
+		;;
+
+	"Zeref - Everything Shape - Clip to Shape")
+		open_everything_shape
+		xdo 585 247 # Click on dropdown for all all modes
+		xdo 495 274 # Click on 'Clip to Shape' button
+		xdo 475 556 # Click on `Shape` Button
+		asswipe
 		;;
 
 	"PhosCity - svg2ass" | "PhosCity - svg2ass - pasteover")
@@ -120,6 +177,7 @@ case "${PLUGIN_NAME}" in
 		key ctrl+a  # Select everything inside the textbox
 		key ctrl+v  # Paste whatever's on clipboard to the textbox
 		xdo 625 455 # Click on `Textbox` button
+		asswipe
 		;;
 
 	"arch1t3cht - Note Browser - Load Notes")
