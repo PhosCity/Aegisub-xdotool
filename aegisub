@@ -9,6 +9,7 @@ DEPENDENCIES=(rofi xdotool yad notify-send xclip)
 SLEEP_DURATION=0.04s
 
 declare -a OPTIONS=(
+	"Line0 - AssWipe"
 	"Zeref - Everything Shape - Shape Clipper"
 	"Zeref - Everything Shape - Shape to Clip"
 	"Zeref - Everything Shape - Clip to Shape"
@@ -119,6 +120,8 @@ fi
 PLUGIN_NAME=$(printf '%s\n' "${OPTIONS[@]}" | rofi -dmenu -i -p "Plugins:" -theme "${ROFI_THEME}")
 
 case "${PLUGIN_NAME}" in
+	"Line0 - AssWipe") asswipe ;;
+
 	"Zeref - Everything Shape - Shape Clipper")
 		# Shape clipping sometimes gives wrong results so it's recommended that you expand the shape first
 
@@ -136,7 +139,6 @@ case "${PLUGIN_NAME}" in
 		xdo 585 247 # Click on dropdown for all all modes
 		xdo 487 550 # Click on 'Shape to Clip' in dropdown
 		xdo 475 556 # Click on `Shape` Button
-		asswipe
 		;;
 
 	"Zeref - Everything Shape - Clip to Shape")
@@ -224,5 +226,6 @@ case "${PLUGIN_NAME}" in
 		key ctrl+v
 		xdo 533 520 # Click on Go button
 		;;
+
 	*) ;;
 esac
