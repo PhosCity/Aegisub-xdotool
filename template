@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 
-# VERSION = 0.0.1
+# VERSION = 0.0.2
 
-# Variables
-DEPENDENCIES=(rofi xdotool yad notify-send)
+# ╭──────────────────────────────────────────────────────────╮
+# │ Variables                                                │
+# ╰──────────────────────────────────────────────────────────╯
+DEPENDENCIES=(rofi xdotool yad notify-send xclip)
 SLEEP_DURATION=0.04s # [EDIT] Increase this value if the script executes so fast that it's missing what it should click.
-DIR="${HOME}"        # [EDIT] Folder where you want file picker to open
 
-# [EDIT] Write the names of the plugins here
+# [EDIT] Write the names of the plugins here by replacing items below
 declare -a OPTIONS=(
 	"item1"
 	"item2"
@@ -15,9 +16,13 @@ declare -a OPTIONS=(
 
 SCRIPT_DIRECTORY=${BASH_SOURCE[0]%/*}
 ROFI_THEME="${SCRIPT_DIRECTORY}/rofi-themes/window.rasi"
+CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
 
-# Functions
-# Check dependencies
+# ╭──────────────────────────────────────────────────────────╮
+# │ Functions                                                │
+# ╰──────────────────────────────────────────────────────────╯
+
+# Collect missing dependencies
 dep_ch() {
 	for dep; do
 		if ! command -v "${dep}" >/dev/null; then
@@ -41,17 +46,26 @@ key() {
 
 # File selector. The extention of file is $1
 select_file() {
-	FILETYPE="$1"
-
+	# Create cache file if it doesn't exist
+	[[ -f "${CACHE}" ]] || echo "${HOME}" >"${CACHE}"
+	DIR=$(cat "${CACHE}")
+	[[ ! -d "${DIR}" ]] && DIR="${HOME}"
 	cd "${DIR}" || exit 1
+
+	FILETYPE="$1"
 	FILE=$(yad --width 800 --height 500 --title "Choose ${FILETYPE} file" --file-filter "*.${FILETYPE}" --file)
 	if [[ ${FILE##*.} != "${FILETYPE}" ]]; then
 		notify-send "${FILETYPE} file was not selected."
 		exit 1
+	else
+		NEW_DIR=$(dirname "${FILE}")
+		echo "${NEW_DIR}" >"${CACHE}"
 	fi
 }
 
-# Check for dependencies
+# ╭──────────────────────────────────────────────────────────╮
+# │ Check for dependencies                                   │
+# ╰──────────────────────────────────────────────────────────╯
 for i in "${DEPENDENCIES[@]}"; do
 	dep_ch "${i}"
 done
@@ -61,7 +75,9 @@ if [[ -n "${missing_dep}" ]]; then
 	exit 1
 fi
 
-# Main
+# ╭──────────────────────────────────────────────────────────╮
+# │ Main                                                     │
+# ╰──────────────────────────────────────────────────────────╯
 PLUGIN_NAME=$(printf '%s\n' "${OPTIONS[@]}" | rofi -dmenu -i -p "Plugins:" -theme "${ROFI_THEME}")
 
 case "${PLUGIN_NAME}" in
