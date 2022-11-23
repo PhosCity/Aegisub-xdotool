@@ -5,9 +5,7 @@
 # ╭──────────────────────────────────────────────────────────╮
 # │ Variables                                                │
 # ╰──────────────────────────────────────────────────────────╯
-DEPENDENCIES=(rofi xdotool yad notify-send xclip)
 SLEEP_DURATION=0.04s
-
 declare -a OPTIONS=(
 	"Line0 - AssWipe"
 	"Zeref - Everything Shape - Shape Clipper"
@@ -29,8 +27,14 @@ declare -a OPTIONS=(
 	"Unanimated - Hyperdimensional Relocator - clip2fax"
 	"Unanimated - Hyperdimensional Relocator - clip2frz"
 	"Unanimated - Script Cleanup - Remove Unused Styles"
+	"Unanimated - HYDRA - Create 3D shadow"
+	"Unanimated - HYDRA - fscx -> fscy"
+	"Unanimated - HYDRA - fscy -> fscx"
+	"Unanimated - HYDRA - Move color tag to first block"
 )
 
+MISSING_DEPS=()
+DEPENDENCIES=(rofi xdotool yad notify-send xclip)
 SCRIPT_DIRECTORY=${BASH_SOURCE[0]%/*}
 ROFI_THEME="${SCRIPT_DIRECTORY}/rofi-themes/window.rasi"
 CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
@@ -43,7 +47,7 @@ CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
 dep_ch() {
 	for dep; do
 		if ! command -v "${dep}" >/dev/null; then
-			missing_dep="${missing_dep}\"${dep}\" "
+			MISSING_DEPS+=("${dep}")
 		fi
 	done
 }
@@ -133,15 +137,23 @@ round_tags() {
 	xdo 620 505 # Click on Metamorphosis Button
 }
 
+# Open Unanimated - HYDRA
+open_hydra() {
+	xdo 329 50  # Click on Automation
+	xdo 346 229 # Click on !unanimated
+	xdo 532 351 # Click on Hydra
+}
+
 # ╭──────────────────────────────────────────────────────────╮
 # │ Check for dependencies                                   │
 # ╰──────────────────────────────────────────────────────────╯
 for i in "${DEPENDENCIES[@]}"; do
 	dep_ch "${i}"
 done
-if [[ -n "${missing_dep}" ]]; then
-	notify-send "${missing_dep}not found. Please install all missing dependencies."
-	printf "\033[1;31m\n%s\033[0m\n" "${missing_dep}not found. Please install all missing dependencies." >&2
+if [[ "${#MISSING_DEPS}" -gt 0 ]]; then
+	printf -v missing_deps '%s, ' "${MISSING_DEPS[@]}"
+	echo "${missing_deps%, } not found. Please install all missing dependencies."
+	notify-send "${missing_deps%, } not found. Please install all missing dependencies."
 	exit 1
 fi
 
@@ -354,6 +366,34 @@ case "${PLUGIN_NAME}" in
 		xdo 554 680 # Click on Script Cleanup
 		xdo 536 431 # Click on Tick 'Delete unused styles'
 		xdo 387 537 # Click on 'Run Selected' Button
+		;;
+
+	"Unanimated - HYDRA - Create 3D shadow")
+		open_hydra
+		xdo 881 590 # Click on 'special' dropdown
+		xdo 745 393 # Click on create 3D shadow
+		xdo 717 662 # Click on Special Button
+		;;
+
+	"Unanimated - HYDRA - fscx -> fscy")
+		open_hydra
+		xdo 881 590 # Click on 'special' dropdown
+		xdo 720 171 # Click on fscx -> fscy
+		xdo 717 662 # Click on Special Button
+		;;
+
+	"Unanimated - HYDRA - fscy -> fscx")
+		open_hydra
+		xdo 881 590 # Click on 'special' dropdown
+		xdo 706 201 # Click on fscy -> fscx
+		xdo 717 662 # Click on Special Button
+		;;
+
+	"Unanimated - HYDRA - Move color tag to first block")
+		open_hydra
+		xdo 881 590 # Click on 'special' dropdown
+		xdo 756 448 # Click on move color tag to first block
+		xdo 717 662 # Click on Special Button
 		;;
 
 	*) ;;

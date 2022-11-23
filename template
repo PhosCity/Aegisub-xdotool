@@ -5,7 +5,6 @@
 # ╭──────────────────────────────────────────────────────────╮
 # │ Variables                                                │
 # ╰──────────────────────────────────────────────────────────╯
-DEPENDENCIES=(rofi xdotool yad notify-send xclip)
 SLEEP_DURATION=0.04s # [EDIT] Increase this value if the script executes so fast that it's missing what it should click.
 
 # [EDIT] Write the names of the plugins here by replacing items below
@@ -14,6 +13,8 @@ declare -a OPTIONS=(
 	"item2"
 )
 
+MISSING_DEPS=()
+DEPENDENCIES=(rofi xdotool yad notify-send xclip)
 SCRIPT_DIRECTORY=${BASH_SOURCE[0]%/*}
 ROFI_THEME="${SCRIPT_DIRECTORY}/rofi-themes/window.rasi"
 CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
@@ -26,7 +27,7 @@ CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
 dep_ch() {
 	for dep; do
 		if ! command -v "${dep}" >/dev/null; then
-			missing_dep="${missing_dep}\"${dep}\" "
+			MISSING_DEPS+=("${dep}")
 		fi
 	done
 }
@@ -69,9 +70,10 @@ select_file() {
 for i in "${DEPENDENCIES[@]}"; do
 	dep_ch "${i}"
 done
-if [[ -n "${missing_dep}" ]]; then
-	notify-send "${missing_dep}not found. Please install all missing dependencies."
-	printf "\033[1;31m\n%s\033[0m\n" "${missing_dep}not found. Please install all missing dependencies." >&2
+if [[ "${#MISSING_DEPS}" -gt 0 ]]; then
+	printf -v missing_deps '%s, ' "${MISSING_DEPS[@]}"
+	echo "${missing_deps%, } not found. Please install all missing dependencies."
+	notify-send "${missing_deps%, } not found. Please install all missing dependencies."
 	exit 1
 fi
 
