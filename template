@@ -7,7 +7,7 @@
 # ╰──────────────────────────────────────────────────────────╯
 SLEEP_DURATION=0.04s # [EDIT] Increase this value if the script executes so fast that it's missing what it should click.
 
-# [EDIT] Write the names of the plugins here by replacing items below
+# [EDIT] Write the names of the plugins here by replacing "items" below
 declare -a OPTIONS=(
 	"item1"
 	"item2"
@@ -22,15 +22,6 @@ CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
 # ╭──────────────────────────────────────────────────────────╮
 # │ Functions                                                │
 # ╰──────────────────────────────────────────────────────────╯
-
-# Collect missing dependencies
-dep_ch() {
-	for dep; do
-		if ! command -v "${dep}" >/dev/null; then
-			MISSING_DEPS+=("${dep}")
-		fi
-	done
-}
 
 # Move mouse to ($1, $2) coordinate and left click
 xdo() {
@@ -68,7 +59,9 @@ select_file() {
 # │ Check for dependencies                                   │
 # ╰──────────────────────────────────────────────────────────╯
 for i in "${DEPENDENCIES[@]}"; do
-	dep_ch "${i}"
+	if ! command -v "${i}" >/dev/null; then
+		MISSING_DEPS+=("${i}")
+	fi
 done
 if [[ "${#MISSING_DEPS}" -gt 0 ]]; then
 	printf -v missing_deps '%s, ' "${MISSING_DEPS[@]}"

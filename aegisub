@@ -5,12 +5,13 @@
 # ╭──────────────────────────────────────────────────────────╮
 # │ Variables                                                │
 # ╰──────────────────────────────────────────────────────────╯
-SLEEP_DURATION=0.04s
+SLEEP_DURATION=0.2s
 declare -a OPTIONS=(
 	"Line0 - AssWipe"
 	"Zeref - Everything Shape - Shape Clipper"
 	"Zeref - Everything Shape - Shape to Clip"
 	"Zeref - Everything Shape - Clip to Shape"
+	"Zeref - Everything Shape - Expand"
 	"PhosCity - svg2ass"
 	"PhosCity - svg2ass - pasteover"
 	"arch1t3cht - Note Browser - Load Notes"
@@ -31,6 +32,7 @@ declare -a OPTIONS=(
 	"Unanimated - HYDRA - fscx -> fscy"
 	"Unanimated - HYDRA - fscy -> fscx"
 	"Unanimated - HYDRA - Move color tag to first block"
+	"Lyger - Lua Interpreter - Change ! to random character"
 )
 
 MISSING_DEPS=()
@@ -42,15 +44,6 @@ CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
 # ╭──────────────────────────────────────────────────────────╮
 # │ Functions                                                │
 # ╰──────────────────────────────────────────────────────────╯
-
-# Collect missing dependencies
-dep_ch() {
-	for dep; do
-		if ! command -v "${dep}" >/dev/null; then
-			MISSING_DEPS+=("${dep}")
-		fi
-	done
-}
 
 # Move mouse to ($1, $2) coordinate and left click
 xdo() {
@@ -148,7 +141,9 @@ open_hydra() {
 # │ Check for dependencies                                   │
 # ╰──────────────────────────────────────────────────────────╯
 for i in "${DEPENDENCIES[@]}"; do
-	dep_ch "${i}"
+	if ! command -v "${i}" >/dev/null; then
+		MISSING_DEPS+=("${i}")
+	fi
 done
 if [[ "${#MISSING_DEPS}" -gt 0 ]]; then
 	printf -v missing_deps '%s, ' "${MISSING_DEPS[@]}"
@@ -191,6 +186,11 @@ case "${PLUGIN_NAME}" in
 		asswipe
 		;;
 
+	"Zeref - Everything Shape - Expand")
+		expand_shape
+		asswipe
+		;;
+
 	"PhosCity - svg2ass" | "PhosCity - svg2ass - pasteover")
 		MODE=$(printf "drawing\nclip\niclip" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
 
@@ -200,8 +200,8 @@ case "${PLUGIN_NAME}" in
 
 		xdo 331 47  # Click on Automation Tab
 		xdo 327 200 # Click on !phoscity
-		xdo 569 426 # Click on svg2ass
-		xdo 693 459 # Click on Run
+		xdo 536 451 # Click on svg2ass
+		xdo 680 478 # Click on run
 		case "${MODE}" in
 			"clip")
 				xdo 509 427 # Untick drawing
@@ -394,6 +394,16 @@ case "${PLUGIN_NAME}" in
 		xdo 881 590 # Click on 'special' dropdown
 		xdo 756 448 # Click on move color tag to first block
 		xdo 717 662 # Click on Special Button
+		;;
+
+	"Lyger - Lua Interpreter - Change ! to random character")
+		xdo 327 51  # Click on Automation
+		xdo 339 127 # Click on !lyger
+		xdo 542 226 # Click on lua interpreter
+		xdo 675 440 # Click on snippet dropdown
+		xdo 466 531 # Click on change ! to random character
+		xdo 536 473 # Click on Load Button
+		xdo 452 474 # Click on Run Button
 		;;
 
 	*) ;;
