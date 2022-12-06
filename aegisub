@@ -52,10 +52,16 @@ xdo() {
 	xdotool click 1
 }
 
-# type key $1 in the keyboard
+# press a key $1 in the keyboard
 key() {
 	sleep "${SLEEP_DURATION}"
 	xdotool key "$1"
+}
+
+# type $1 in the keyboard
+type() {
+	sleep "${SLEEP_DURATION}"
+	xdotool type "$1"
 }
 
 # File selector. The extention of file is $1
@@ -278,14 +284,10 @@ case "${PLUGIN_NAME}" in
 		xdo 705 536 # Click on 7
 		xdo 734 367 # Click on Scale x
 		key ctrl+a
-		key 1
-		key 0
-		key 0
+		type 100
 		xdo 738 399 # Click on Scale y
 		key ctrl+a
-		key 1
-		key 0
-		key 0
+		type 100
 		xdo 730 436 # Click on OK Button
 		asswipe
 		;;

@@ -30,10 +30,16 @@ xdo() {
 	xdotool click 1
 }
 
-# type key $1 in the keyboard
+# press a key $1 in the keyboard
 key() {
 	sleep "${SLEEP_DURATION}"
 	xdotool key "$1"
+}
+
+# type $1 in the keyboard
+type() {
+	sleep "${SLEEP_DURATION}"
+	xdotool type "$1"
 }
 
 # File selector. The extention of file is $1
