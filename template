@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# VERSION = 0.0.2
+# VERSION = 0.0.3
 
 # ╭──────────────────────────────────────────────────────────╮
 # │ Variables                                                │
@@ -26,7 +26,7 @@ CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
 # Move mouse to ($1, $2) coordinate and left click
 xdo() {
 	sleep "${SLEEP_DURATION}"
-	xdotool mousemove "$1" "$2"
+	xdotool mousemove --sync "$1" "$2"
 	xdotool click 1
 }
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-# VERSION = 0.0.2
+# VERSION = 0.0.3
 
 # ╭──────────────────────────────────────────────────────────╮
 # │ Variables                                                │
 # ╰──────────────────────────────────────────────────────────╯
-SLEEP_DURATION=0.2s
+SLEEP_DURATION=0.04s
 declare -a OPTIONS=(
 	"Line0 - AssWipe"
 	"Zeref - Everything Shape - Shape Clipper"
@@ -48,7 +48,7 @@ CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
 # Move mouse to ($1, $2) coordinate and left click
 xdo() {
 	sleep "${SLEEP_DURATION}"
-	xdotool mousemove "$1" "$2"
+	xdotool mousemove --sync "$1" "$2"
 	xdotool click 1
 }
 
@@ -95,16 +95,16 @@ asswipe() {
 # Open Everything Shape Script
 open_everything_shape() {
 	xdo 331 47  # Click on Automation Tab
-	xdo 411 252 # Click on !utilities
-	xdo 568 378 # Click on Zeref
-	xdo 686 376 # Click on Everything Shape
+	xdo 328 276 # Click on !Zeref
+	xdo 494 279 # Click on Everything Shape
+	xdo 634 279 # Click on Everything Shape
 }
 
 # Shape Expand - Zeref's Everything Shape
 expand_shape() {
 	open_everything_shape
 	xdo 585 247 # Click on dropdown for all all modes
-	xdo 525 326 # Click on `Shape Expand`
+	xdo 514 357 # Click on Shape Expand
 	xdo 475 556 # Click on `Shape` Button
 }
 
@@ -165,7 +165,7 @@ case "${PLUGIN_NAME}" in
 		expand_shape
 		open_everything_shape
 		xdo 585 247 # Click on dropdown for all all modes
-		xdo 510 297 # Click on `Shape Clipper`
+		xdo 490 332 # Click on Shape Clipper
 		xdo 475 556 # Click on `Shape` Button
 		asswipe
 		;;
@@ -174,14 +174,14 @@ case "${PLUGIN_NAME}" in
 		expand_shape
 		open_everything_shape
 		xdo 585 247 # Click on dropdown for all all modes
-		xdo 487 550 # Click on 'Shape to Clip' in dropdown
+		xdo 512 580 # Click on Shape to Clip
 		xdo 475 556 # Click on `Shape` Button
 		;;
 
 	"Zeref - Everything Shape - Clip to Shape")
 		open_everything_shape
 		xdo 585 247 # Click on dropdown for all all modes
-		xdo 495 274 # Click on 'Clip to Shape' button
+		xdo 488 281 # Click on clip to shape
 		xdo 475 556 # Click on `Shape` Button
 		asswipe
 		;;
@@ -247,7 +247,7 @@ case "${PLUGIN_NAME}" in
 
 		xdo 331 47  # Click on Automation Tab
 		xdo 355 185 # Click on !petzku
-		xdo 515 215 # Click on Encode Clip
+		xdo 537 201 # Click on Encode Clip
 		case "${MODE}" in
 			"Clip with Subtitles") xdo 700 280 ;;
 			"Clip with Subtitles (No Audio)") xdo 700 300 ;;
