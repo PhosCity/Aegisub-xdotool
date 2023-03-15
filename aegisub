@@ -5,13 +5,13 @@
 # ╭──────────────────────────────────────────────────────────╮
 # │ Variables                                                │
 # ╰──────────────────────────────────────────────────────────╯
-SLEEP_DURATION=0.04s
+SLEEP_DURATION=0.15s
 declare -a OPTIONS=(
 	"Line0 - AssWipe"
 	"Zeref - Everything Shape - Shape Clipper"
-	"Zeref - Everything Shape - Shape to Clip"
-	"Zeref - Everything Shape - Clip to Shape"
-	"Zeref - Everything Shape - Expand"
+	"ILL - Shapery - Shape to Clip"
+	"ILL - Shapery - Clip to Shape"
+	"ILL - Shapery - Expand"
 	"PhosCity - svg2ass"
 	"PhosCity - svg2ass - pasteover"
 	"arch1t3cht - Note Browser - Load Notes"
@@ -33,6 +33,7 @@ declare -a OPTIONS=(
 	"Unanimated - HYDRA - fscy -> fscx"
 	"Unanimated - HYDRA - Move color tag to first block"
 	"Lyger - Lua Interpreter - Change ! to random character"
+	"Shift by 0 frames"
 )
 
 MISSING_DEPS=()
@@ -49,6 +50,7 @@ CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
 xdo() {
 	sleep "${SLEEP_DURATION}"
 	xdotool mousemove --sync "$1" "$2"
+	sleep "${SLEEP_DURATION}"
 	xdotool click 1
 }
 
@@ -89,29 +91,27 @@ select_file() {
 
 # ASSWipe
 asswipe() {
-	sleep 0.8s
-	xdo 323 51  # Click on Automation Menu
-	xdo 329 104 # Click on line0
-	xdo 519 101 # Click on ASSWipe
-	xdo 531 619 # Click on OK Button
-	sleep 1s    # Allow 1 second for asswipe to complete. If processing takes more than that, close manually
-	xdo 686 311 # Click on Close Button
+	sleep "${SLEEP_DURATION}"
+	xdo 323 51                       # Click on Automation Menu
+	xdo 329 104                      # Click on line0
+	xdo 519 101                      # Click on ASSWipe
+	xdo 531 619                      # Click on OK Button
+	xdotool mousemove --sync 686 311 # Go to Close Button but don't click
 }
 
 # Open Everything Shape Script
 open_everything_shape() {
-	xdo 331 47  # Click on Automation Tab
-	xdo 328 276 # Click on !Zeref
-	xdo 494 279 # Click on Everything Shape
-	xdo 634 279 # Click on Everything Shape
+	xdo 327 46  # Click on Automation Tab
+	xdo 344 282 # Click on !zeref
+	xdo 511 329 # Click on Everything Shape
 }
 
 # Shape Expand - Zeref's Everything Shape
 expand_shape() {
-	open_everything_shape
-	xdo 585 247 # Click on dropdown for all all modes
-	xdo 514 357 # Click on Shape Expand
-	xdo 475 556 # Click on `Shape` Button
+	xdo 321 46  # Click on Automation Tab
+	xdo 352 279 # Click on !zeref
+	xdo 518 275 # Click on :Shapery Macros:
+	xdo 633 304 # Click on Expand
 }
 
 # Open Hyperdimensional Relocator
@@ -169,6 +169,8 @@ case "${PLUGIN_NAME}" in
 	"Zeref - Everything Shape - Shape Clipper")
 		# Shape clipping sometimes gives wrong results so it's recommended that you expand the shape first
 		expand_shape
+		sleep "${SLEEP_DURATION}"
+		sleep "${SLEEP_DURATION}"
 		open_everything_shape
 		xdo 585 247 # Click on dropdown for all all modes
 		xdo 490 332 # Click on Shape Clipper
@@ -176,23 +178,24 @@ case "${PLUGIN_NAME}" in
 		asswipe
 		;;
 
-	"Zeref - Everything Shape - Shape to Clip")
+	"ILL - Shapery - Shape to Clip")
 		expand_shape
-		open_everything_shape
-		xdo 585 247 # Click on dropdown for all all modes
-		xdo 512 580 # Click on Shape to Clip
-		xdo 475 556 # Click on `Shape` Button
+		xdo 327 46  # Click on Automation Tab
+		xdo 352 279 # Click on !zeref
+		xdo 518 275 # Click on :Shapery Macros:
+		xdo 645 357 # Click on Shape To Clip
 		;;
 
-	"Zeref - Everything Shape - Clip to Shape")
-		open_everything_shape
-		xdo 585 247 # Click on dropdown for all all modes
-		xdo 488 281 # Click on clip to shape
-		xdo 475 556 # Click on `Shape` Button
+	"ILL - Shapery - Clip to Shape")
+		expand_shape
+		xdo 327 46  # Click on Automation Tab
+		xdo 352 279 # Click on !zeref
+		xdo 518 275 # Click on :Shapery Macros:
+		xdo 629 279 # Click on Clip to Shape
 		asswipe
 		;;
 
-	"Zeref - Everything Shape - Expand")
+	"ILL - Shapery - Expand")
 		expand_shape
 		asswipe
 		;;
@@ -201,13 +204,13 @@ case "${PLUGIN_NAME}" in
 		MODE=$(printf "drawing\nclip\niclip" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
 
 		select_file "svg"
-		PATH_TO_SVG2ASS="${HOME}/Fansubbing/Scripts/svg2ass" # where svg2ass is located (If svg2ass is at path, remove this line and replace this variable with `svg2ass` below)
-		"${PATH_TO_SVG2ASS}" "${FILE}" | xclip -selection clipboard
+		path_to_svg2ass="${HOME}/.local/bin/svg2ass"
+		"${path_to_svg2ass}" "${FILE}" | xclip -selection clipboard
 
-		xdo 331 47  # Click on Automation Tab
-		xdo 327 200 # Click on !phoscity
-		xdo 536 451 # Click on svg2ass
-		xdo 680 478 # Click on run
+		xdo 328 49  # Click on Automation
+		xdo 343 204 # Click on !phoscity
+		xdo 528 551 # Click on svg2ass
+		xdo 638 577 # Click on Run
 		case "${MODE}" in
 			"clip")
 				xdo 509 427 # Untick drawing
@@ -267,9 +270,9 @@ case "${PLUGIN_NAME}" in
 	"Aegisub Motion - Apply")
 		select_file "txt"
 		xclip -selection clipboard -i <"${FILE}"
-		xdo 331 47  # Click on Automation Tab
-		xdo 390 352 # Click on Aegisub Motion
-		xdo 534 355 # Click on Apply
+		xdo 326 50  # Click on Automation
+		xdo 339 356 # Click on Aegisub-Motion
+		xdo 490 354 # Click on Apply
 		xdo 600 273 # Click on the texbox
 		key ctrl+v
 		xdo 533 520 # Click on Go button
@@ -398,14 +401,13 @@ case "${PLUGIN_NAME}" in
 		xdo 717 662 # Click on Special Button
 		;;
 
-	"Lyger - Lua Interpreter - Change ! to random character")
-		xdo 327 51  # Click on Automation
-		xdo 339 127 # Click on !lyger
-		xdo 542 226 # Click on lua interpreter
-		xdo 675 440 # Click on snippet dropdown
-		xdo 466 531 # Click on change ! to random character
-		xdo 536 473 # Click on Load Button
-		xdo 452 474 # Click on Run Button
+	"Shift by 0 frames")
+		xdo 441 75  # Click on `Shift Time`
+		xdo 429 307 # Click on Frames Radio
+		xdo 535 306 # Click on Frames box
+		key ctrl+a
+		key 0
+		xdo 896 521 # Click on Ok Button
 		;;
 
 	*) ;;
