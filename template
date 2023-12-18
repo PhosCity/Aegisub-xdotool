@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# VERSION = 0.0.3
+# VERSION = 0.0.4
 
 # ╭──────────────────────────────────────────────────────────╮
 # │ Variables                                                │
@@ -9,8 +9,9 @@ SLEEP_DURATION=0.04s # [EDIT] Increase this value if the script executes so fast
 
 # [EDIT] Write the names of the plugins here by replacing "items" below
 declare -a OPTIONS=(
-	"item1"
-	"item2"
+    "Repeat Last"
+    "item1"
+    "item2"
 )
 
 MISSING_DEPS=()
@@ -18,6 +19,21 @@ DEPENDENCIES=(rofi xdotool yad notify-send xclip)
 SCRIPT_DIRECTORY=${BASH_SOURCE[0]%/*}
 ROFI_THEME="${SCRIPT_DIRECTORY}/rofi-themes/window.rasi"
 CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
+LOGFILE="/tmp/aegisub-xdotool.txt"
+
+# ╭──────────────────────────────────────────────────────────╮
+# │ Check for dependencies                                   │
+# ╰──────────────────────────────────────────────────────────╯
+for i in "${DEPENDENCIES[@]}"; do
+    if ! command -v "${i}" >/dev/null; then
+        MISSING_DEPS+=("${i}")
+    fi
+done
+if [[ "${#MISSING_DEPS}" -gt 0 ]]; then
+    printf -v missing_deps '%s, ' "${MISSING_DEPS[@]}"
+    notify-send "${missing_deps%, } not found. Please install all missing dependencies."
+    exit 1
+fi
 
 # ╭──────────────────────────────────────────────────────────╮
 # │ Functions                                                │
@@ -25,68 +41,80 @@ CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
 
 # Move mouse to ($1, $2) coordinate and left click
 xdo() {
-	sleep "${SLEEP_DURATION}"
-	xdotool mousemove --sync "$1" "$2"
-	xdotool click 1
+    xdotool mousemove --sync "$1" "$2"
+    sleep "${SLEEP_DURATION}"
+    xdotool click 1
 }
 
 # press a key $1 in the keyboard
 key() {
-	sleep "${SLEEP_DURATION}"
-	xdotool key "$1"
+    sleep "${SLEEP_DURATION}"
+    xdotool key "$1"
 }
 
 # type $1 in the keyboard
-type() {
-	sleep "${SLEEP_DURATION}"
-	xdotool type "$1"
+typekeys() {
+    sleep "${SLEEP_DURATION}"
+    xdotool type "$1"
 }
 
 # File selector. The extention of file is $1
 select_file() {
-	# Create cache file if it doesn't exist
-	[[ -f "${CACHE}" ]] || echo "${HOME}" >"${CACHE}"
-	DIR=$(cat "${CACHE}")
-	[[ ! -d "${DIR}" ]] && DIR="${HOME}"
-	cd "${DIR}" || exit 1
+    # Create cache file if it doesn't exist
+    [[ -f "${CACHE}" ]] || echo "${HOME}" >"${CACHE}"
+    DIR=$(cat "${CACHE}")
+    [[ ! -d "${DIR}" ]] && DIR="${HOME}"
+    cd "${DIR}" || exit 1
 
-	FILETYPE="$1"
-	FILE=$(yad --width 800 --height 500 --title "Choose ${FILETYPE} file" --file-filter "*.${FILETYPE}" --file)
-	if [[ ${FILE##*.} != "${FILETYPE}" ]]; then
-		notify-send "${FILETYPE} file was not selected."
-		exit 1
-	else
-		NEW_DIR=$(dirname "${FILE}")
-		echo "${NEW_DIR}" >"${CACHE}"
-	fi
+    FILETYPE="$1"
+    FILE=$(yad --width 800 --height 500 --title "Choose ${FILETYPE} file" --file-filter "*.${FILETYPE}" --file)
+    if [[ ${FILE##*.} != "${FILETYPE}" ]]; then
+        notify-send "${FILETYPE} file was not selected."
+        exit 1
+    else
+        NEW_DIR=$(dirname "${FILE}")
+        echo "${NEW_DIR}" >"${CACHE}"
+    fi
 }
 
-# ╭──────────────────────────────────────────────────────────╮
-# │ Check for dependencies                                   │
-# ╰──────────────────────────────────────────────────────────╯
-for i in "${DEPENDENCIES[@]}"; do
-	if ! command -v "${i}" >/dev/null; then
-		MISSING_DEPS+=("${i}")
-	fi
-done
-if [[ "${#MISSING_DEPS}" -gt 0 ]]; then
-	printf -v missing_deps '%s, ' "${MISSING_DEPS[@]}"
-	echo "${missing_deps%, } not found. Please install all missing dependencies."
-	notify-send "${missing_deps%, } not found. Please install all missing dependencies."
-	exit 1
-fi
+check_script_has_opened() {
+    sleep "${SLEEP_DURATION}"
+    window_name=$(xdotool getwindowfocus getwindowname | grep "$1")
+    [[ -z "${window_name}" ]] && notify-send -t 5000 "Script did not open successfully" && exit 1
+}
+
+check_non_gui_script_has_opened() {
+    if xprop; then
+        notify-send -t 5000 "Script did not open successfully" && exit 1
+    fi
+}
+
+save_to_log_file() {
+    if ! grep -q "$1" "${LOGFILE}"; then
+        echo "$1=$2" >>"${LOGFILE}"
+    fi
+}
 
 # ╭──────────────────────────────────────────────────────────╮
 # │ Main                                                     │
 # ╰──────────────────────────────────────────────────────────╯
 PLUGIN_NAME=$(printf '%s\n' "${OPTIONS[@]}" | rofi -dmenu -i -p "Plugins:" -theme "${ROFI_THEME}")
 
+if [[ "${PLUGIN_NAME}" == "Repeat Last" ]]; then
+    while IFS='=' read -r key value; do
+        declare "${key}=${value}"
+    done <"${LOGFILE}"
+elif [[ -n "${PLUGIN_NAME}" ]]; then
+    : >"${LOGFILE}"
+    save_to_log_file "PLUGIN_NAME" "${PLUGIN_NAME}"
+fi
+
 case "${PLUGIN_NAME}" in
-	"item1")
-		# [EDIT] Put xdotool commands to execute plugin item1 here
-		;;
-	"item2")
-		# [EDIT] Put xdotool commands to execute plugin item2 here
-		;;
-	*) ;;
+    "item1")
+        # [EDIT] Put xdotool commands to execute plugin item1 here
+        ;;
+    "item2")
+        # [EDIT] Put xdotool commands to execute plugin item2 here
+        ;;
+    *) ;;
 esac

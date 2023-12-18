@@ -1,39 +1,44 @@
 #!/usr/bin/env bash
 
-# VERSION = 0.0.3
+# VERSION = 0.0.4
 
 # ╭──────────────────────────────────────────────────────────╮
 # │ Variables                                                │
 # ╰──────────────────────────────────────────────────────────╯
-SLEEP_DURATION=0.15s
+SLEEP_DURATION=0.04s
 declare -a OPTIONS=(
-	"Line0 - AssWipe"
-	"Zeref - Everything Shape - Shape Clipper"
-	"ILL - Shapery - Shape to Clip"
-	"ILL - Shapery - Clip to Shape"
-	"ILL - Shapery - Expand"
-	"PhosCity - svg2ass"
-	"PhosCity - svg2ass - pasteover"
-	"arch1t3cht - Note Browser - Load Notes"
-	"arch1t3cht - Note Browser - Clear Markers"
-	"petzku - Encode Clip"
-	"Aegisub Motion - Apply"
-	"Line0 - Merge Drawings"
-	"Chrolo - Change Alignment"
-	"Unanimated - Hyperdimensional Relocator - Round"
-	"Unanimated - Hyperdimensional Relocator - Line2fbf"
-	"Unanimated - Hyperdimensional Relocator - Find center"
-	"Unanimated - Hyperdimensional Relocator - Align X"
-	"Unanimated - Hyperdimensional Relocator - Align Y"
-	"Unanimated - Hyperdimensional Relocator - clip2fax"
-	"Unanimated - Hyperdimensional Relocator - clip2frz"
-	"Unanimated - Script Cleanup - Remove Unused Styles"
-	"Unanimated - HYDRA - Create 3D shadow"
-	"Unanimated - HYDRA - fscx -> fscy"
-	"Unanimated - HYDRA - fscy -> fscx"
-	"Unanimated - HYDRA - Move color tag to first block"
-	"Lyger - Lua Interpreter - Change ! to random character"
-	"Shift by 0 frames"
+    "Repeat Last"
+    "Line0 - AssWipe"
+    "ILL - Shapery - Shape Clipper"
+    "ILL - Shapery - Shape to Clip"
+    "ILL - Shapery - Simplify"
+    "ILL - Shapery - Merge Drawings"
+    "ILL - Shape to Origin"
+    "ILL - Shape Trim"
+    "ILL - Change Alignment"
+    "ILL - Line2fbf"
+    "Clip to Shape"
+    "PhosCity - svg2ass"
+    "PhosCity - svg2ass - pasteover"
+    "PhosCity - Add Grain"
+    "PhosCity - Fold Operations"
+    "PhosCity - Extrapolate Tracking"
+    "arch1t3cht - Note Browser - Load Notes"
+    "arch1t3cht - Note Browser - Clear Markers"
+    "petzku - Encode Clip"
+    "petzku - Combine Gradient Lines"
+    "Aegisub Motion - Apply"
+    "Unanimated - Hyperdimensional Relocator - Round"
+    "Unanimated - Hyperdimensional Relocator - Find center"
+    "Unanimated - Hyperdimensional Relocator - Align X"
+    "Unanimated - Hyperdimensional Relocator - Align Y"
+    "Unanimated - Script Cleanup - Remove Unused Styles"
+    "Unanimated - HYDRA - iclip <-> clip"
+    "Unanimated - HYDRA - fscx -> fscy"
+    "Unanimated - HYDRA - fscy -> fscx"
+    "Unanimated - HYDRA - Move color tag to first block"
+    "Unanimated - Selectrix - Select continuous line"
+    "Shift by 0 frames"
 )
 
 MISSING_DEPS=()
@@ -41,6 +46,21 @@ DEPENDENCIES=(rofi xdotool yad notify-send xclip)
 SCRIPT_DIRECTORY=${BASH_SOURCE[0]%/*}
 ROFI_THEME="${SCRIPT_DIRECTORY}/rofi-themes/window.rasi"
 CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
+LOGFILE="/tmp/aegisub-xdotool.txt"
+
+# ╭──────────────────────────────────────────────────────────╮
+# │ Check for dependencies                                   │
+# ╰──────────────────────────────────────────────────────────╯
+for i in "${DEPENDENCIES[@]}"; do
+    if ! command -v "${i}" >/dev/null; then
+        MISSING_DEPS+=("${i}")
+    fi
+done
+if [[ "${#MISSING_DEPS}" -gt 0 ]]; then
+    printf -v missing_deps '%s, ' "${MISSING_DEPS[@]}"
+    notify-send "${missing_deps%, } not found. Please install all missing dependencies."
+    exit 1
+fi
 
 # ╭──────────────────────────────────────────────────────────╮
 # │ Functions                                                │
@@ -48,41 +68,58 @@ CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/aegisub-xdotool.txt"
 
 # Move mouse to ($1, $2) coordinate and left click
 xdo() {
-	sleep "${SLEEP_DURATION}"
-	xdotool mousemove --sync "$1" "$2"
-	sleep "${SLEEP_DURATION}"
-	xdotool click 1
+    xdotool mousemove --sync "$1" "$2"
+    sleep "${SLEEP_DURATION}"
+    xdotool click 1
 }
 
 # press a key $1 in the keyboard
 key() {
-	sleep "${SLEEP_DURATION}"
-	xdotool key "$1"
+    sleep "${SLEEP_DURATION}"
+    xdotool key "$1"
 }
 
 # type $1 in the keyboard
-type() {
-	sleep "${SLEEP_DURATION}"
-	xdotool type "$1"
+typekeys() {
+    sleep "${SLEEP_DURATION}"
+    xdotool type "$1"
 }
 
 # File selector. The extention of file is $1
 select_file() {
-	# Create cache file if it doesn't exist
-	[[ -f "${CACHE}" ]] || echo "${HOME}" >"${CACHE}"
-	DIR=$(cat "${CACHE}")
-	[[ ! -d "${DIR}" ]] && DIR="${HOME}"
-	cd "${DIR}" || exit 1
+    # Create cache file if it doesn't exist
+    [[ -f "${CACHE}" ]] || echo "${HOME}" >"${CACHE}"
+    DIR=$(cat "${CACHE}")
+    [[ ! -d "${DIR}" ]] && DIR="${HOME}"
+    cd "${DIR}" || exit 1
 
-	FILETYPE="$1"
-	FILE=$(yad --width 800 --height 500 --title "Choose ${FILETYPE} file" --file-filter "*.${FILETYPE}" --file)
-	if [[ ${FILE##*.} != "${FILETYPE}" ]]; then
-		notify-send "${FILETYPE} file was not selected."
-		exit 1
-	else
-		NEW_DIR=$(dirname "${FILE}")
-		echo "${NEW_DIR}" >"${CACHE}"
-	fi
+    FILETYPE="$1"
+    FILE=$(yad --width 800 --height 500 --title "Choose ${FILETYPE} file" --file-filter "*.${FILETYPE}" --file)
+    if [[ ${FILE##*.} != "${FILETYPE}" ]]; then
+        notify-send "${FILETYPE} file was not selected."
+        exit 1
+    else
+        NEW_DIR=$(dirname "${FILE}")
+        echo "${NEW_DIR}" >"${CACHE}"
+    fi
+}
+
+check_script_has_opened() {
+    sleep "${SLEEP_DURATION}"
+    window_name=$(xdotool getwindowfocus getwindowname | grep "$1")
+    [[ -z "${window_name}" ]] && notify-send -t 5000 "Script did not open successfully" && exit 1
+}
+
+check_non_gui_script_has_opened() {
+    if xprop; then
+        notify-send -t 5000 "Script did not open successfully" && exit 1
+    fi
+}
+
+save_to_log_file() {
+    if ! grep -q "$1" "${LOGFILE}"; then
+        echo "$1=$2" >>"${LOGFILE}"
+    fi
 }
 
 # ╭──────────────────────────────────────────────────────────╮
@@ -91,324 +128,493 @@ select_file() {
 
 # ASSWipe
 asswipe() {
-	sleep "${SLEEP_DURATION}"
-	xdo 323 51                       # Click on Automation Menu
-	xdo 329 104                      # Click on line0
-	xdo 519 101                      # Click on ASSWipe
-	xdo 531 619                      # Click on OK Button
-	xdotool mousemove --sync 686 311 # Go to Close Button but don't click
+    sleep "${SLEEP_DURATION}"
+    xdo 333 56  # Click on Automation
+    xdo 355 168 # Click on !line0
+    xdo 519 167 # Click on ASSWIPE
+    check_script_has_opened "ASSWipe"
+    xdo 507 635                      # Click on OK button
+    xdotool mousemove --sync 679 316 # Go to Close Button but don't click
 }
 
-# Open Everything Shape Script
-open_everything_shape() {
-	xdo 327 46  # Click on Automation Tab
-	xdo 344 282 # Click on !zeref
-	xdo 511 329 # Click on Everything Shape
+# Open Shapery Macros
+open_shapery_macros() {
+    xdo 337 55  # Click on Automation
+    xdo 354 137 # Click on !ILL
+    xdo 557 141 # Click on :Shapery Macros:
+    check_non_gui_script_has_opened
 }
 
-# Shape Expand - Zeref's Everything Shape
-expand_shape() {
-	xdo 321 46  # Click on Automation Tab
-	xdo 352 279 # Click on !zeref
-	xdo 518 275 # Click on :Shapery Macros:
-	xdo 633 304 # Click on Expand
+# Open Shapery Script
+open_shapery() {
+    xdo 337 55  # Click on Automation
+    xdo 354 137 # Click on !ILL
+    xdo 538 271 # Click on Shapery
+    check_non_gui_script_has_opened
+}
+
+# Simplify shape
+simplify_shape() {
+    open_shapery
+    xdo 676 331 # Click on Manipulate
+    check_script_has_opened "Manipulate"
+    xdo 602 501 # Click on Simplify Button
+}
+
+# !phoscity
+open_phoscity() {
+    xdo 337 55  # Click on Automation
+    xdo 368 276 # Click on !phoscity
+    check_non_gui_script_has_opened
+}
+
+# !unanimated
+open_unanimated() {
+    xdo 337 55  # Click on Automation
+    xdo 361 305 # Click on !unanimated
+    check_non_gui_script_has_opened
 }
 
 # Open Hyperdimensional Relocator
 open_relocator() {
-	xdo 326 48  # Click on Automation
-	xdo 332 227 # Click on !unanimated
-	xdo 557 380 # Click on Hyperdimensional Relocator
+    open_unanimated
+    xdo 562 402 # Click on Hyperdimensional Relocater
+    check_script_has_opened "Hyperdimensional Relocator"
 }
 
 # Round the tags using Hyperdimensional Relocator
 round_tags() {
-	open_relocator
-	xdo 724 285 # Click on Metamorphosis dropdown
-	xdo 666 82  # Click on round numbers
-	xdo 714 356 # Click on round dropdown
-	case "$1" in
-		0.1) xdo 667 415 ;;
-		0.01) xdo 670 440 ;;
-		0.001) xdo 670 470 ;;
-		1 | *) xdo 660 390 ;;
-	esac
-	xdo 620 505 # Click on Metamorphosis Button
+    open_relocator
+    xdo 728 279 # Click on Metamorphosis Dropdown
+    xdo 648 84  # Click on round numbers
+    xdo 721 350 # Click on Round tags dropdown
+    case "$1" in
+        0.1)
+            xdo 669 414 # Click on 0.1
+            ;;
+        0.01)
+            xdo 673 437 # Click on 0.01
+            ;;
+        0.001)
+            xdo 669 467 # Click on 0.001
+            ;;
+        1 | *)
+            xdo 662 387 # Click on 1
+            ;;
+    esac
+    xdo 595 512 # Click on Metamorphosis Button
 }
 
 # Open Unanimated - HYDRA
 open_hydra() {
-	xdo 329 50  # Click on Automation
-	xdo 346 229 # Click on !unanimated
-	xdo 532 351 # Click on Hydra
+    open_unanimated
+    xdo 525 374 # Click on HYDRA
+    check_script_has_opened "HYDRA"
 }
 
-# ╭──────────────────────────────────────────────────────────╮
-# │ Check for dependencies                                   │
-# ╰──────────────────────────────────────────────────────────╯
-for i in "${DEPENDENCIES[@]}"; do
-	if ! command -v "${i}" >/dev/null; then
-		MISSING_DEPS+=("${i}")
-	fi
-done
-if [[ "${#MISSING_DEPS}" -gt 0 ]]; then
-	printf -v missing_deps '%s, ' "${MISSING_DEPS[@]}"
-	echo "${missing_deps%, } not found. Please install all missing dependencies."
-	notify-send "${missing_deps%, } not found. Please install all missing dependencies."
-	exit 1
-fi
+open_hydra_special() {
+    open_hydra
+    xdo 813 584 # Click on Load Full
+    xdo 898 602 # Click on special dropdown
+}
+
+# Open Unanimated - Selectrix
+open_selectrix() {
+    open_unanimated
+    xdo 531 697 # Click on Selectrix
+    check_script_has_opened "Selectrix"
+}
 
 # ╭──────────────────────────────────────────────────────────╮
 # │ Main                                                     │
 # ╰──────────────────────────────────────────────────────────╯
 PLUGIN_NAME=$(printf '%s\n' "${OPTIONS[@]}" | rofi -dmenu -i -p "Plugins:" -theme "${ROFI_THEME}")
 
+if [[ "${PLUGIN_NAME}" == "Repeat Last" ]]; then
+    while IFS='=' read -r key value; do
+        declare "${key}=${value}"
+    done <"${LOGFILE}"
+elif [[ -n "${PLUGIN_NAME}" ]]; then
+    : >"${LOGFILE}"
+    save_to_log_file "PLUGIN_NAME" "${PLUGIN_NAME}"
+fi
+
 case "${PLUGIN_NAME}" in
-	"Line0 - AssWipe") asswipe ;;
+    "Line0 - AssWipe") asswipe ;;
 
-	"Zeref - Everything Shape - Shape Clipper")
-		# Shape clipping sometimes gives wrong results so it's recommended that you expand the shape first
-		expand_shape
-		sleep "${SLEEP_DURATION}"
-		sleep "${SLEEP_DURATION}"
-		open_everything_shape
-		xdo 585 247 # Click on dropdown for all all modes
-		xdo 490 332 # Click on Shape Clipper
-		xdo 475 556 # Click on `Shape` Button
-		asswipe
-		;;
+    "ILL - Shapery - Shape Clipper")
+        open_shapery_macros
+        xdo 699 195 # Click on Shape clipper
+        simplify_shape
+        asswipe
+        ;;
 
-	"ILL - Shapery - Shape to Clip")
-		expand_shape
-		xdo 327 46  # Click on Automation Tab
-		xdo 352 279 # Click on !zeref
-		xdo 518 275 # Click on :Shapery Macros:
-		xdo 645 357 # Click on Shape To Clip
-		;;
+    "ILL - Shapery - Shape to Clip")
+        open_shapery_macros
+        xdo 685 331 # Click on Shape to clip
+        ;;
 
-	"ILL - Shapery - Clip to Shape")
-		expand_shape
-		xdo 327 46  # Click on Automation Tab
-		xdo 352 279 # Click on !zeref
-		xdo 518 275 # Click on :Shapery Macros:
-		xdo 629 279 # Click on Clip to Shape
-		asswipe
-		;;
+    "ILL - Shapery - Simplify")
+        [[ -z "${MODE}" ]] && MODE=$(printf "Straight\nBezier" | rofi -dmenu -i -p "Type:" -theme "${ROFI_THEME}")
+        save_to_log_file "MODE" "${MODE}"
+        case "${MODE}" in
+            "Bezier")
+                open_shapery
+                xdo 783 319 # Click on Manipulate
+                check_script_has_opened "Manipulate"
+                sleep "${SLEEP_DURATION}"
+                xdo 696 259 # Click on Fit Curves
+                xdo 602 501 # Click on Simplify Button
+                ;;
+            "Straight") simplify_shape ;;
+            *) exit 0 ;;
+        esac
+        asswipe
+        ;;
 
-	"ILL - Shapery - Expand")
-		expand_shape
-		asswipe
-		;;
+    "ILL - Shapery - Merge Drawings")
+        open_shapery
+        xdo 680 379 # Click on Pathfinder
+        check_script_has_opened "Pathfinder"
+        xdo 764 342 # Click on dropdown
+        xdo 701 375 # Click on Unite
+        xdo 634 428 # Click on OK button
+        # simplify_shape
+        # asswipe
+        ;;
 
-	"PhosCity - svg2ass" | "PhosCity - svg2ass - pasteover")
-		MODE=$(printf "drawing\nclip\niclip" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
+    "ILL - Change Alignment")
+        [[ -z "${MODE}" ]] && MODE=$(seq 1 9 | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
 
-		select_file "svg"
-		path_to_svg2ass="${HOME}/.local/bin/svg2ass"
-		"${path_to_svg2ass}" "${FILE}" | xclip -selection clipboard
+        xdo 337 55  # Click on Automation
+        xdo 354 137 # Click on !ILL
+        xdo 548 167 # Click on Change Alignment
+        check_script_has_opened "Change Alignment"
 
-		xdo 328 49  # Click on Automation
-		xdo 343 204 # Click on !phoscity
-		xdo 528 551 # Click on svg2ass
-		xdo 638 577 # Click on Run
-		case "${MODE}" in
-			"clip")
-				xdo 509 427 # Untick drawing
-				xdo 614 423 # Tick clip
-				;;
-			"iclip")
-				xdo 509 427 # Untick drawing
-				xdo 682 426 # Tick iclip
-				;;
-			*) ;;
-		esac
-		if [[ "${PLUGIN_NAME}" == "PhosCity - svg2ass - pasteover" ]]; then
-			xdo 767 431 # Tick `pasteover`
-		fi
-		xdo 680 320 # Click inside the textbox
-		key ctrl+a  # Select everything inside the textbox
-		key ctrl+v  # Paste whatever's on clipboard to the textbox
-		xdo 625 455 # Click on `Textbox` button
-		asswipe
-		;;
+        case "${MODE}" in
+            1) xdo 606 388 ;; # Click on 1
+            2) xdo 641 388 ;; # Click on 2
+            3) xdo 674 386 ;; # Click on 3
+            4) xdo 606 363 ;; # Click on 4
+            5) xdo 637 362 ;; # Click on 5
+            6) xdo 673 361 ;; # Click on 6
+            7) xdo 608 341 ;; # Click on 7
+            8) xdo 640 340 ;; # Click on 8
+            9) xdo 668 339 ;; # Click on 9
+            *) ;;
+        esac
+        xdo 635 416 # Click on "Ok" button
+        round_tags 0.001
+        save_to_log_file "MODE" "${MODE}"
+        ;;
 
-	"arch1t3cht - Note Browser - Load Notes")
-		select_file "txt"
-		xclip -selection clipboard -i <"${FILE}"
+    "Clip to Shape")
+        [[ -z "${MODE}" ]] && MODE=$(printf "Masquerade\nShapery" | rofi -dmenu -i -p "Choose Plugin:" -theme "${ROFI_THEME}")
+        case "${MODE}" in
+            "Masquerade")
+                open_unanimated
+                xdo 537 506 # Click on Masquerade
+                check_script_has_opened "Masquerade"
+                xdo 510 327 # Click on dropdown
+                xdo 347 361 # Click on 'from clip'
+                xdo 301 437 # Click on Masquerade button
+                ;;
+            "Shapery")
+                open_shapery_macros
+                xdo 693 141 # Click on Clip to shape
+                simplify_shape
+                asswipe
+                ;;
+            *) ;;
+        esac
+        save_to_log_file "MODE" "${MODE}"
+        ;;
 
-		xdo 331 47  # Click on Automation Tab
-		xdo 355 160 # Click on !pace
-		xdo 555 180 # Click on Note Browser
-		xdo 730 300 # Click on Load Notes
-		xdo 520 310 # Click on text box
-		key ctrl+v  # Paste whatever's on clipboard to the textbox
-		xdo 590 515 # Click on Ok button
-		;;
+    "ILL - Shape to Origin")
+        open_shapery_macros
+        xdo 686 358 # Click on Shape to origin
+        simplify_shape
+        asswipe
+        ;;
 
-	"arch1t3cht - Note Browser - Clear Markers")
-		xdo 331 47  # Click on Automation Tab
-		xdo 355 160 # Click on !pace
-		xdo 555 180 # Click on Note Browser
-		;;
+    "ILL - Shape Trim")
+        open_shapery_macros
+        xdo 687 385 # Click on Shape trim
+        sleep 1
+        simplify_shape
+        asswipe
+        ;;
 
-	"petzku - Encode Clip")
-		MODE=$(printf "Clip with Subtitles\nClip with Subtitles (No Audio)\nRaw Video\nRaw Video (No Audio)\nAudio Only" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
+    "ILL - Line2fbf")
+        xdo 337 55  # Click on Automation
+        xdo 354 137 # Click on !ILL
+        xdo 529 220 # Click on Line2FBF
+        check_script_has_opened "Line To FBF"
+        xdo 648 411 # Click on OK
+        ;;
 
-		xdo 331 47  # Click on Automation Tab
-		xdo 355 185 # Click on !petzku
-		xdo 537 201 # Click on Encode Clip
-		case "${MODE}" in
-			"Clip with Subtitles") xdo 700 280 ;;
-			"Clip with Subtitles (No Audio)") xdo 700 300 ;;
-			"Raw Video") xdo 700 240 ;;
-			"Raw Video (No Audio)") xdo 700 253 ;;
-			"Audio Only") xdo 700 215 ;;
-			*) ;;
-		esac
-		;;
+    "PhosCity - svg2ass" | "PhosCity - svg2ass - pasteover")
+        [[ -z "${MODE}" ]] && MODE=$(printf "drawing\nclip\niclip" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
 
-	"Aegisub Motion - Apply")
-		select_file "txt"
-		xclip -selection clipboard -i <"${FILE}"
-		xdo 326 50  # Click on Automation
-		xdo 339 356 # Click on Aegisub-Motion
-		xdo 490 354 # Click on Apply
-		xdo 600 273 # Click on the texbox
-		key ctrl+v
-		xdo 533 520 # Click on Go button
-		;;
+        [[ -z "${FILE}" ]] && select_file "svg"
+        path_to_svg2ass="${HOME}/Fansubbing/Scripts/svg2ass"
+        "${path_to_svg2ass}" "${FILE}" | xclip -selection clipboard
 
-	"Line0 - Merge Drawings")
-		# Merge drawings tend to give wrong results when fscx/y != 100
-		xdo 324 52  # Click on Automation
-		xdo 336 103 # Click on !line0
-		xdo 532 149 # Click on Merge Drawings
-		xdo 772 332 # Click on alignment dropdown
-		xdo 705 536 # Click on 7
-		xdo 734 367 # Click on Scale x
-		key ctrl+a
-		type 100
-		xdo 738 399 # Click on Scale y
-		key ctrl+a
-		type 100
-		xdo 730 436 # Click on OK Button
-		asswipe
-		;;
+        save_to_log_file "MODE" "${MODE}"
+        save_to_log_file "FILE" "${FILE}"
 
-	"Chrolo - Change Alignment")
-		ALIGNMENT=$(seq 1 9 | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
-		xdo 322 45  # Click on Automation
-		xdo 345 251 # Click on !utilities
-		xdo 537 304 # Click on Chrolo
-		xdo 706 301 # Click on Change Alignment
-		xdo 663 383 # Click on dropdown
-		case "${ALIGNMENT}" in
-			1) xdo 602 409 ;;
-			2) xdo 608 438 ;;
-			3) xdo 600 459 ;;
-			4) xdo 609 496 ;;
-			5) xdo 602 520 ;;
-			6) xdo 606 549 ;;
-			7) xdo 598 577 ;;
-			8) xdo 601 605 ;;
-			9) xdo 604 632 ;;
-			*) ;;
-		esac
-		xdo 728 414 # Click on Switch
-		round_tags 0.001
-		;;
+        open_phoscity
+        xdo 526 467 # Click on svg2ass
+        xdo 644 492 # Click on Run
+        check_script_has_opened "svg2ass"
+        case "${MODE}" in
+            "clip")
+                xdo 505 430 # Untick drawing
+                xdo 610 427 # Click on clip
+                ;;
+            "iclip")
+                xdo 505 430 # Untick drawing
+                xdo 684 425 # Click on iclip
+                ;;
+            *) ;;
+        esac
+        if [[ "${PLUGIN_NAME}" == "PhosCity - svg2ass - pasteover" ]]; then
+            xdo 763 424 # Click on pasteover
+        fi
+        xdo 641 318 # Click on textbox
+        key ctrl+a  # Select everything inside the textbox
+        key ctrl+v  # Paste whatever's on clipboard to the textbox
+        xdo 621 460 # Click on Textbox button
+        asswipe
 
-	"Unanimated - Hyperdimensional Relocator - Round")
-		PRECISION=$(printf "1\n0.1\n0.01\n0.001" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
-		round_tags "${PRECISION}"
-		;;
+        ;;
 
-	"Unanimated - Hyperdimensional Relocator - Line2fbf")
-		open_relocator
-		xdo 724 285 # Click on Metamorphosis dropdown
-		xdo 641 108 # Click on line2fbf
-		xdo 620 505 # Click on Metamorphosis Button
-		;;
+    "PhosCity - Add Grain")
+        [[ -z "${MODE}" ]] && MODE=$(printf "Add Grain\nAdd Dense Grain" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
+        open_phoscity
+        xdo 587 289 # Click on Add Grain
+        case "${MODE}" in
+            "Add Grain")
+                xdo 761 318 # Click on Add grain
+                ;;
+            "Add Dense Grain")
+                xdo 785 289 # Click on Add dense grain
+                ;;
+            *) ;;
+        esac
+        save_to_log_file "MODE" "${MODE}"
+        ;;
 
-	"Unanimated - Hyperdimensional Relocator - Find center")
-		open_relocator
-		xdo 724 285 # Click on Metamorphosis dropdown
-		xdo 650 499 # Click on find centre
-		xdo 620 505 # Click on Metamorphosis Button
-		;;
+    "PhosCity - Fold Operations")
+        [[ -z "${MODE}" ]] && MODE=$(printf "Create new Fold\nSelect Fold\nComment Fold\nUncomment Fold\nCut\nCopy\nPaste\nDelete" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
+        if [[ "${MODE}" = "Create new Fold" ]]; then
+            [[ -z "${fold_name}" ]] && fold_name=$(printf "" | rofi -dmenu -i -p "Fold Name:" -theme "${ROFI_THEME}")
+            printf "%s" "${fold_name}" | xclip -selection clipboard
+        fi
 
-	"Unanimated - Hyperdimensional Relocator - Align X")
-		open_relocator
-		xdo 463 292 # Click on Positron Canon dropdown
-		xdo 405 163 # Click on Align X
-		xdo 382 502 # Click on Positron Canon Button
-		;;
+        save_to_log_file "MODE" "${MODE}"
+        save_to_log_file "fold_name" "${fold_name}"
 
-	"Unanimated - Hyperdimensional Relocator - Align Y")
-		open_relocator
-		xdo 463 292 # Click on Positron Canon dropdown
-		xdo 365 193 # Click on Align Y
-		xdo 382 502 # Click on Positron Canon Button
-		;;
+        open_phoscity
+        xdo 540 354 # Click on Fold Operations
+        check_non_gui_script_has_opened
+        case "${MODE}" in
+            "Create new Fold")
+                xdo 701 436 # Click on Create fold
+                check_script_has_opened "Create Fold Around Selected Lines"
+                xdo 752 368 # Click on textbox
+                key ctrl+v  # Paste whatever's on clipboard to the textbox
+                xdo 712 399 # Click on Apply Button
+                ;;
+            "Select Fold")
+                xdo 668 572 # Click on Select
+                ;;
+            "Delete")
+                xdo 681 491 # Click on Delete
+                ;;
+            "Comment Fold")
+                xdo 678 354 # Click on Comment
+                ;;
+            "Uncomment Fold")
+                xdo 696 624 # Click on Uncomment
+                ;;
+            "Cut")
+                xdo 681 461 # Click on Cut
+                ;;
+            "Copy")
+                xdo 676 406 # Click on Copy
+                ;;
+            "Paste")
+                xdo 685 545 # Click on Paste
+                ;;
+            *) ;;
+        esac
+        xdotool mousemove --sync 682 314 # Go to Close Button but don't click
+        # xdo 682 314 # Click on Close Button
+        ;;
 
-	"Unanimated - Hyperdimensional Relocator - clip2fax")
-		open_relocator
-		xdo 463 292 # Click on Positron Canon dropdown
-		xdo 385 248 # Click on clip to fax
-		xdo 382 502 # Click on Positron Canon Button
-		;;
+    "PhosCity - Extrapolate Tracking")
+        [[ -z "${MODE}" ]] && MODE=$(printf "Start\nEnd" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
+        [[ -z "${FRAMES}" ]] && FRAMES=$(printf "" | rofi -dmenu -i -p "Number of frames:" -theme "${ROFI_THEME}")
+        printf "%s" "${FRAMES}" | xclip -selection clipboard
+        open_phoscity
+        xdo 536 331 # Click on Extrapolate Tracking
+        check_script_has_opened "Extrapolate Tracking"
+        case "${MODE}" in
+            "End")
+                xdo 805 337 # Click on Dropdown
+                xdo 700 397 # Click on End
+                ;;
+            *) ;;
+        esac
+        xdo 708 368 # Click on Textbox
+        # typekeys "${FRAMES}"
+        key ctrl+a
+        key ctrl+v  # Paste whatever's on clipboard to the textbox
+        xdo 689 430 # Click on Apply Button
+        xdo 679 315 # Click on Close Button
 
-	"Unanimated - Hyperdimensional Relocator - clip2frz")
-		open_relocator
-		xdo 463 292 # Click on Positron Canon dropdown
-		xdo 405 274 # Click on clip to frz
-		xdo 382 502 # Click on Positron Canon Button
-		;;
+        save_to_log_file "MODE" "${MODE}"
+        save_to_log_file "FRAMES" "${FRAMES}"
+        ;;
 
-	"Unanimated - Script Cleanup - Remove Unused Styles")
-		xdo 327 48  # Click on Automation
-		xdo 332 227 # Click on !unanimated
-		xdo 554 680 # Click on Script Cleanup
-		xdo 536 431 # Click on Tick 'Delete unused styles'
-		xdo 387 537 # Click on 'Run Selected' Button
-		;;
+    "arch1t3cht - Note Browser - Load Notes")
+        [[ -z "${FILE}" ]] && select_file "txt"
+        xclip -selection clipboard -i <"${FILE}"
 
-	"Unanimated - HYDRA - Create 3D shadow")
-		open_hydra
-		xdo 881 590 # Click on 'special' dropdown
-		xdo 745 393 # Click on create 3D shadow
-		xdo 717 662 # Click on Special Button
-		;;
+        xdo 337 55  # Click on Automation
+        xdo 386 116 # Click on !arch
+        xdo 594 113 # Click on Note Browser
+        xdo 769 258 # Click on Load Notes
+        check_script_has_opened "Load notes"
+        xdo 630 366 # Click on textbox
+        key ctrl+v  # Paste whatever's on clipboard to the textbox
+        xdo 576 516 # Click on OK button
+        save_to_log_file "FILE" "${FILE}"
+        ;;
 
-	"Unanimated - HYDRA - fscx -> fscy")
-		open_hydra
-		xdo 881 590 # Click on 'special' dropdown
-		xdo 720 171 # Click on fscx -> fscy
-		xdo 717 662 # Click on Special Button
-		;;
+    "arch1t3cht - Note Browser - Clear Markers")
+        xdo 337 55  # Click on Automation
+        xdo 386 116 # Click on !arch
+        xdo 594 113 # Click on Note Browser
+        xdo 779 118 # Click on Clear all markers
+        ;;
 
-	"Unanimated - HYDRA - fscy -> fscx")
-		open_hydra
-		xdo 881 590 # Click on 'special' dropdown
-		xdo 706 201 # Click on fscy -> fscx
-		xdo 717 662 # Click on Special Button
-		;;
+    "petzku - Encode Clip")
+        [[ -z "${MODE}" ]] && MODE=$(printf "Clip with Subtitles\nClip with Subtitles (No Audio)\nRaw Video\nRaw Video (No Audio)\nAudio Only" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
 
-	"Unanimated - HYDRA - Move color tag to first block")
-		open_hydra
-		xdo 881 590 # Click on 'special' dropdown
-		xdo 756 448 # Click on move color tag to first block
-		xdo 717 662 # Click on Special Button
-		;;
+        xdo 337 55  # Click on Automation
+        xdo 360 248 # Click on !petzku
+        xdo 544 276 # Click on Encode Clip
+        check_non_gui_script_has_opened
 
-	"Shift by 0 frames")
-		xdo 441 75  # Click on `Shift Time`
-		xdo 429 307 # Click on Frames Radio
-		xdo 535 306 # Click on Frames box
-		key ctrl+a
-		key 0
-		xdo 896 521 # Click on Ok Button
-		;;
+        case "${MODE}" in
+            "Clip with Subtitles") xdo 700 353 ;;
+            "Clip with Subtitles (No Audio)") xdo 715 385 ;;
+            "Raw Video") xdo 694 304 ;;
+            "Raw Video (No Audio)") xdo 710 328 ;;
+            "Audio Only") xdo 702 274 ;;
+            *) ;;
+        esac
+        save_to_log_file "MODE" "${MODE}"
+        ;;
 
-	*) ;;
+    "petzku - Combine Gradient Lines")
+        xdo 337 55  # Click on Automation
+        xdo 407 262 # Click on !petzku
+        xdo 661 257 # Click on Combine Gradient Lines
+        ;;
+
+    "Aegisub Motion - Apply")
+        [[ -z "${FILE}" ]] && select_file "txt"
+        xclip -selection clipboard -i <"${FILE}"
+
+        xdo 337 55  # Click on Automation
+        xdo 404 378 # Click on Aegisub-motion
+        xdo 586 377 # Click on Apply
+        check_script_has_opened "Apply"
+        xdo 572 270 # Click on Textbox
+        key ctrl+v
+        xdo 518 527 # Click on Go button
+        save_to_log_file "FILE" "${FILE}"
+        ;;
+
+    "Unanimated - Hyperdimensional Relocator - Round")
+        [[ -z "${MODE}" ]] && MODE=$(printf "1\n0.1\n0.01\n0.001" | rofi -dmenu -i -p "Mode:" -theme "${ROFI_THEME}")
+        round_tags "${MODE}"
+        save_to_log_file "MODE" "${MODE}"
+        ;;
+
+    "Unanimated - Hyperdimensional Relocator - Find center")
+        open_relocator
+        xdo 728 279 # Click on Metamorphosis Dropdown
+        xdo 648 500 # Click on find centre
+        xdo 595 512 # Click on Metamorphosis Button
+
+        ;;
+
+    "Unanimated - Hyperdimensional Relocator - Align X")
+        open_relocator
+        xdo 451 280 # Click on Positron Canon Dropdown
+        xdo 352 166 # Click on Align X
+        xdo 366 507 # Click on Positron Canon button
+        ;;
+
+    "Unanimated - Hyperdimensional Relocator - Align Y")
+        open_relocator
+        xdo 451 280 # Click on Positron Canon Dropdown
+        xdo 346 190 # Click on Align Y
+        xdo 366 507 # Click on Positron Canon button
+        ;;
+
+    "Unanimated - Script Cleanup - Remove Unused Styles")
+        open_unanimated
+        xdo 598 669 # Click on Script Cleanup
+        xdo 528 461 # Click on Delete unused styles
+        xdo 354 572 # Click on Run selected Button
+        ;;
+
+    "Unanimated - HYDRA - iclip <-> clip")
+        open_hydra_special
+        xdo 766 238 # Click on clip <-> iclip
+        xdo 697 676 # Click on Special Button
+        ;;
+
+    "Unanimated - HYDRA - fscx -> fscy")
+        open_hydra_special
+        xdo 713 185 # Click on fscx -> fscy
+        xdo 697 676 # Click on Special Button
+        ;;
+
+    "Unanimated - HYDRA - fscy -> fscx")
+        open_hydra_special
+        xdo 739 210 # Click on fscy -> fscx
+        xdo 697 676 # Click on Special Button
+        ;;
+
+    "Unanimated - HYDRA - Move color tag to first block")
+        open_hydra
+        xdo 822 557 # Click on Load Full
+        xdo 901 574 # Click on special function dropdown
+        xdo 768 412 # Click on move color tag to first block
+        xdo 695 636 # Click on Special Button
+        ;;
+
+    "Unanimated - Selectrix - Select continuous line")
+        open_selectrix
+        xdo 684 495 # Click on Preset dropdown
+        xdo 576 206 # Click on same text (contn)
+        xdo 575 549 # Click on Preset button
+        ;;
+
+    "Shift by 0 frames")
+        xdo 796 86  # Click on Shift Times
+        xdo 426 280 # Click on Frames Radio
+        xdo 537 277 # Click on input box
+        key ctrl+a
+        key 0
+        xdo 899 545 # Click on Ok button
+        ;;
+
+    *) ;;
 esac
